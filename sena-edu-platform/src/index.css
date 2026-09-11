@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-gray-950 text-gray-100 font-sans antialiased;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-900;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-700 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 bg-sena-green hover:bg-sena-dark text-white font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-all duration-200;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 font-medium rounded-lg transition-all duration-200;
+  }
+  .card {
+    @apply bg-gray-900 border border-gray-800 rounded-xl p-5;
+  }
+  .card-hover {
+    @apply card hover:border-sena-green/50 hover:shadow-lg hover:shadow-sena-green/10 transition-all duration-200 cursor-pointer;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  .badge-green {
+    @apply badge bg-sena-green/20 text-sena-green border border-sena-green/30;
+  }
+  .badge-blue {
+    @apply badge bg-blue-500/20 text-blue-400 border border-blue-500/30;
+  }
+  .badge-yellow {
+    @apply badge bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
+  }
+  .badge-red {
+    @apply badge bg-red-500/20 text-red-400 border border-red-500/30;
+  }
+  .input {
+    @apply w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-sena-green focus:ring-1 focus:ring-sena-green transition-colors;
+  }
+  .section-title {
+    @apply text-2xl font-bold text-white mb-1;
+  }
+  .section-subtitle {
+    @apply text-gray-400 mb-6;
+  }
+  .code-block {
+    @apply bg-gray-950 border border-gray-800 rounded-lg p-4 font-mono text-sm overflow-x-auto;
+  }
+  .progress-bar {
+    @apply h-2 rounded-full bg-gray-800 overflow-hidden;
+  }
+  .progress-fill {
+    @apply h-full rounded-full bg-sena-green transition-all duration-500;
+  }
+  .nav-link {
+    @apply flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150;
+  }
+  .nav-link-active {
+    @apply nav-link bg-sena-green/15 text-sena-green;
+  }
+  .nav-link-inactive {
+    @apply nav-link text-gray-400 hover:text-white hover:bg-gray-800;
+  }
+  .tooltip {
+    @apply absolute z-50 px-2 py-1 text-xs bg-gray-800 text-white rounded shadow-lg pointer-events-none whitespace-nowrap;
+  }
+  .tab-active {
+    @apply border-b-2 border-sena-green text-sena-green;
+  }
+  .tab-inactive {
+    @apply border-b-2 border-transparent text-gray-400 hover:text-white;
+  }
+}
+
+/* Monaco editor custom styles */
+.monaco-editor-container {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid #374151;
+}
+
+/* Highlight.js override for dark theme */
+.hljs {
+  background: transparent !important;
+}
+
+/* Animated gradient border */
+.gradient-border {
+  position: relative;
+  background: linear-gradient(#111827, #111827) padding-box,
+    linear-gradient(135deg, #39A900, #22d3ee) border-box;
+  border: 2px solid transparent;
+  border-radius: 0.75rem;
+}
+
+/* Quiz correct/wrong animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.pop {
+  animation: pop 0.3s ease-in-out;
+}
