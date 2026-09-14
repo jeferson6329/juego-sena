@@ -1,18 +1,18 @@
 -- ============================================================
 -- SENA EDU PLATFORM – Esquema de base de datos (Supabase)
 -- Ejecuta este script en el SQL Editor de tu proyecto Supabase
+-- v2.0 – Incluye tablas del juego educativo individual
 -- ============================================================
 
 -- Habilitar extensión uuid
 create extension if not exists "uuid-ossp";
 
 -- ─── TABLA: profiles ─────────────────────────────────────────────────────────
--- Extiende auth.users con datos del aprendiz
 create table if not exists public.profiles (
   id          uuid references auth.users(id) on delete cascade primary key,
   full_name   text not null default '',
   avatar_url  text,
-  role        text not null default 'aprendiz' check (role in ('aprendiz', 'instructor', 'admin')),
+  role        text not null default 'jugador' check (role in ('jugador', 'organizador', 'admin')),
   points      integer not null default 0,
   badges      text[] default '{}',
   created_at  timestamptz default now(),
@@ -29,6 +29,16 @@ create policy "Cada usuario edita su propio perfil"
   on public.profiles for update
   using (auth.uid() = id);
 
+create policy "Organizadores pueden actualizar puntos de jugadores"
+  on public.profiles for update
+  using (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid()
+        and p.role in ('organizador', 'admin')
+    )
+  );
+
 -- Trigger: crear perfil automáticamente al registrarse
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer as $$
@@ -37,7 +47,7 @@ begin
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', ''),
-    coalesce(new.raw_user_meta_data->>'role', 'aprendiz')
+    coalesce(new.raw_user_meta_data->>'role', 'jugador')
   );
   return new;
 end;
@@ -59,6 +69,23 @@ begin
 end;
 $$;
 
+-- Función RPC: ajustar puntos (puede ser negativo) – solo organizadores
+create or replace function public.adjust_points(target_uid uuid, amount integer)
+returns void language plpgsql security definer as $$
+declare
+  caller_role text;
+begin
+  select role into caller_role from public.profiles where id = auth.uid();
+  if caller_role not in ('organizador', 'admin') then
+    raise exception 'Acceso denegado: solo organizadores pueden ajustar puntos';
+  end if;
+  update public.profiles
+  set points = greatest(0, points + amount),
+      updated_at = now()
+  where id = target_uid;
+end;
+$$;
+
 -- ─── TABLA: points_history ────────────────────────────────────────────────────
 create table if not exists public.points_history (
   id          uuid default uuid_generate_v4() primary key,
@@ -74,16 +101,26 @@ create policy "Ver propio historial"
   on public.points_history for select
   using (auth.uid() = user_id);
 
-create policy "Sistema inserta historial"
+create policy "Sistema inserta historial propio"
   on public.points_history for insert
   with check (auth.uid() = user_id);
+
+create policy "Organizadores ven todo el historial"
+  on public.points_history for select
+  using (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid()
+        and p.role in ('organizador', 'admin')
+    )
+  );
 
 -- ─── TABLA: progress ─────────────────────────────────────────────────────────
 create table if not exists public.progress (
   id           uuid default uuid_generate_v4() primary key,
   user_id      uuid references public.profiles(id) on delete cascade not null,
-  guide_id     text not null,   -- ej: 'guia1' | 'guia3'
-  section_id   text not null,   -- ej: 'http-intro' | 'mvc-patron'
+  guide_id     text not null,
+  section_id   text not null,
   completed    boolean default false,
   completed_at timestamptz,
   unique (user_id, guide_id, section_id)
@@ -136,7 +173,7 @@ create table if not exists public.answers (
   id           uuid default uuid_generate_v4() primary key,
   user_id      uuid references public.profiles(id) on delete cascade not null,
   question_id  uuid references public.questions(id) on delete cascade not null,
-  option_id    uuid references public.options(id) on delete cascade,
+  option_id    uuid,
   is_correct   boolean default false,
   answered_at  timestamptz default now(),
   unique (user_id, question_id)
@@ -156,106 +193,254 @@ create policy "Actualizar propias respuestas"
   on public.answers for update
   using (auth.uid() = user_id);
 
--- ─── DATOS SEMILLA: preguntas Guía 1 ─────────────────────────────────────────
--- Insertar algunas preguntas de ejemplo (ajusta los UUIDs si quieres fijos)
+create policy "Organizadores ven todas las respuestas"
+  on public.answers for select
+  using (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid()
+        and p.role in ('organizador', 'admin')
+    )
+  );
 
-insert into public.questions (guide_id, section_id, question, explanation, points, order_index)
-values
-  ('guia1','http','¿Cuál es la diferencia principal entre HTTP y HTTPS?','HTTPS añade cifrado TLS/SSL sobre HTTP, protegiendo los datos en tránsito entre cliente y servidor.',10,1),
-  ('guia1','http','¿Qué método HTTP se usa normalmente para crear un nuevo recurso?','POST se usa para crear recursos; PUT/PATCH para actualizar; DELETE para eliminar; GET para leer.',10,2),
-  ('guia1','algoritmos','¿Qué es un algoritmo?','Un algoritmo es una secuencia finita, ordenada y determinista de pasos que resuelve un problema concreto.',10,3),
-  ('guia1','lenguajes','¿Cuál de los siguientes lenguajes corre tanto en el navegador como en el servidor?','JavaScript con Node.js es el único lenguaje que puede ejecutarse en ambos entornos (full-stack).',10,4),
-  ('guia1','lenguajes','¿Qué framework de Python se recomienda para APIs rápidas y modernas?','FastAPI está diseñado para construir APIs con Python de forma rápida, con validación automática y documentación integrada.',10,5),
-  ('guia3','mvc','¿Qué componente del patrón MVC gestiona los datos y la lógica de negocio?','El Modelo encapsula los datos y las reglas de negocio; la Vista muestra la información; el Controlador coordina.',10,1),
-  ('guia3','mvc','En el flujo MVC, ¿qué ocurre primero cuando el usuario envía una petición?','El Controlador recibe la petición del usuario/navegador, luego consulta al Modelo y finalmente selecciona la Vista.',10,2),
-  ('guia3','solid','¿Qué significa la "S" en los principios SOLID?','S = Single Responsibility Principle: una clase debe tener una sola razón para cambiar.',10,3),
-  ('guia3','solid','¿Qué principio SOLID dice que las clases deben depender de abstracciones y no de implementaciones concretas?','D = Dependency Inversion Principle: los módulos de alto nivel no deben depender de módulos de bajo nivel; ambos deben depender de abstracciones.',10,4),
-  ('guia3','microservicios','¿Cuál es la función de la API Gateway en una arquitectura de microservicios?','La API Gateway actúa como punto único de entrada que enruta las peticiones del cliente hacia el microservicio correspondiente.',10,5);
+-- ─── TABLA: game_sessions ─────────────────────────────────────────────────────
+-- Una sesión de juego por usuario (el juego individual)
+create table if not exists public.game_sessions (
+  id              uuid default uuid_generate_v4() primary key,
+  user_id         uuid references public.profiles(id) on delete cascade not null unique,
+  status          text not null default 'en_progreso' check (status in ('en_progreso', 'completado')),
+  current_index   integer default 0,
+  total_preguntas integer default 0,
+  total_retos     integer default 0,
+  pts_preguntas   integer default 0,
+  pts_retos       integer default 0,
+  pts_bonus       integer default 0,
+  pts_descuento   integer default 0,
+  aciertos        integer default 0,
+  errores         integer default 0,
+  started_at      timestamptz default now(),
+  completed_at    timestamptz
+);
 
--- Ahora inserta las opciones para cada pregunta
--- (Para simplificar el seed, usa DO block con variables)
+alter table public.game_sessions enable row level security;
 
-do $$
+create policy "Ver propia sesión"
+  on public.game_sessions for select
+  using (auth.uid() = user_id);
+
+create policy "Gestionar propia sesión"
+  on public.game_sessions for all
+  using (auth.uid() = user_id);
+
+create policy "Organizadores ven todas las sesiones"
+  on public.game_sessions for select
+  using (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid()
+        and p.role in ('organizador', 'admin')
+    )
+  );
+
+-- ─── TABLA: game_answers ──────────────────────────────────────────────────────
+-- Respuestas del juego (preguntas y retos)
+create table if not exists public.game_answers (
+  id              uuid default uuid_generate_v4() primary key,
+  user_id         uuid references public.profiles(id) on delete cascade not null,
+  item_id         text not null,          -- ID de la pregunta o reto (de gameData.js)
+  item_type       text not null check (item_type in ('pregunta', 'reto')),
+  tema            text,
+  guia            text,
+  is_correct      boolean default false,
+  pts_obtenidos   integer default 0,
+  respuesta_dada  text,                   -- JSON stringificado
+  answered_at     timestamptz default now(),
+  unique (user_id, item_id)
+);
+
+alter table public.game_answers enable row level security;
+
+create policy "Ver propias respuestas de juego"
+  on public.game_answers for select
+  using (auth.uid() = user_id);
+
+create policy "Insertar propias respuestas de juego"
+  on public.game_answers for insert
+  with check (auth.uid() = user_id);
+
+create policy "Actualizar propias respuestas de juego"
+  on public.game_answers for update
+  using (auth.uid() = user_id);
+
+create policy "Organizadores ven todas las respuestas del juego"
+  on public.game_answers for select
+  using (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid()
+        and p.role in ('organizador', 'admin')
+    )
+  );
+
+-- ─── TABLA: point_adjustments ────────────────────────────────────────────────
+-- Bonus y descuentos aplicados por organizadores
+create table if not exists public.point_adjustments (
+  id              uuid default uuid_generate_v4() primary key,
+  jugador_id      uuid references public.profiles(id) on delete cascade not null,
+  organizador_id  uuid references public.profiles(id) on delete set null,
+  cantidad        integer not null,       -- positivo = bonus, negativo = descuento
+  tipo            text not null check (tipo in ('bonus', 'descuento')),
+  motivo          text not null,
+  created_at      timestamptz default now()
+);
+
+alter table public.point_adjustments enable row level security;
+
+create policy "Jugadores ven sus propios ajustes"
+  on public.point_adjustments for select
+  using (auth.uid() = jugador_id);
+
+create policy "Organizadores ven todos los ajustes"
+  on public.point_adjustments for select
+  using (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid()
+        and p.role in ('organizador', 'admin')
+    )
+  );
+
+create policy "Organizadores insertan ajustes"
+  on public.point_adjustments for insert
+  with check (
+    exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid()
+        and p.role in ('organizador', 'admin')
+    )
+  );
+
+-- ─── RPC: aplicar ajuste de puntos (bonus/descuento) ─────────────────────────
+create or replace function public.apply_point_adjustment(
+  p_jugador_id    uuid,
+  p_cantidad      integer,
+  p_tipo          text,
+  p_motivo        text
+) returns void language plpgsql security definer as $$
 declare
-  q_id uuid;
+  caller_role text;
+  caller_id   uuid;
 begin
-  -- Q1: HTTP vs HTTPS
-  select id into q_id from public.questions where question like '¿Cuál es la diferencia principal%';
-  insert into public.options (question_id, text, is_correct) values
-    (q_id, 'HTTPS usa el puerto 80 y HTTP el 443', false),
-    (q_id, 'HTTPS cifra los datos con TLS/SSL; HTTP no', true),
-    (q_id, 'No hay diferencia, son sinónimos', false),
-    (q_id, 'HTTP es más rápido porque no tiene cabeceras', false);
+  caller_id   := auth.uid();
+  select role into caller_role from public.profiles where id = caller_id;
 
-  -- Q2: Método HTTP POST
-  select id into q_id from public.questions where question like '¿Qué método HTTP se usa%';
-  insert into public.options (question_id, text, is_correct) values
-    (q_id, 'GET', false),
-    (q_id, 'DELETE', false),
-    (q_id, 'POST', true),
-    (q_id, 'OPTIONS', false);
+  if caller_role not in ('organizador', 'admin') then
+    raise exception 'Acceso denegado';
+  end if;
 
-  -- Q3: Algoritmo
-  select id into q_id from public.questions where question like '¿Qué es un algoritmo%';
-  insert into public.options (question_id, text, is_correct) values
-    (q_id, 'Un lenguaje de programación', false),
-    (q_id, 'Una secuencia finita de pasos que resuelve un problema', true),
-    (q_id, 'Un tipo de base de datos', false),
-    (q_id, 'Un patrón de diseño', false);
+  -- Registrar ajuste
+  insert into public.point_adjustments
+    (jugador_id, organizador_id, cantidad, tipo, motivo)
+  values
+    (p_jugador_id, caller_id, p_cantidad, p_tipo, p_motivo);
 
-  -- Q4: JS full-stack
-  select id into q_id from public.questions where question like '¿Cuál de los siguientes lenguajes corre tanto%';
-  insert into public.options (question_id, text, is_correct) values
-    (q_id, 'Python', false),
-    (q_id, 'PHP', false),
-    (q_id, 'Java', false),
-    (q_id, 'JavaScript (Node.js)', true);
+  -- Actualizar puntos (sin bajar de 0)
+  update public.profiles
+  set points = greatest(0, points + p_cantidad),
+      updated_at = now()
+  where id = p_jugador_id;
 
-  -- Q5: FastAPI
-  select id into q_id from public.questions where question like '¿Qué framework de Python%';
-  insert into public.options (question_id, text, is_correct) values
-    (q_id, 'Django', false),
-    (q_id, 'Flask', false),
-    (q_id, 'FastAPI', true),
-    (q_id, 'Laravel', false);
+  -- Insertar en historial
+  insert into public.points_history (user_id, points, reason)
+  values (p_jugador_id, p_cantidad, p_motivo);
+end;
+$$;
 
-  -- Q6: MVC - Modelo
-  select id into q_id from public.questions where question like '¿Qué componente del patrón MVC gestiona%';
-  insert into public.options (question_id, text, is_correct) values
-    (q_id, 'Vista', false),
-    (q_id, 'Controlador', false),
-    (q_id, 'Modelo', true),
-    (q_id, 'Router', false);
+-- ─── RPC: guardar respuesta del juego ────────────────────────────────────────
+create or replace function public.save_game_answer(
+  p_item_id       text,
+  p_item_type     text,
+  p_tema          text,
+  p_guia          text,
+  p_is_correct    boolean,
+  p_pts           integer,
+  p_respuesta     text
+) returns void language plpgsql security definer as $$
+declare
+  uid uuid;
+begin
+  uid := auth.uid();
 
-  -- Q7: MVC flujo
-  select id into q_id from public.questions where question like 'En el flujo MVC%';
-  insert into public.options (question_id, text, is_correct) values
-    (q_id, 'El Modelo recibe la petición directamente', false),
-    (q_id, 'El Controlador recibe la petición', true),
-    (q_id, 'La Vista procesa los datos', false),
-    (q_id, 'La base de datos responde al usuario', false);
+  insert into public.game_answers
+    (user_id, item_id, item_type, tema, guia, is_correct, pts_obtenidos, respuesta_dada)
+  values
+    (uid, p_item_id, p_item_type, p_tema, p_guia, p_is_correct, p_pts, p_respuesta)
+  on conflict (user_id, item_id)
+  do update set
+    is_correct     = excluded.is_correct,
+    pts_obtenidos  = excluded.pts_obtenidos,
+    respuesta_dada = excluded.respuesta_dada,
+    answered_at    = now();
 
-  -- Q8: SOLID S
-  select id into q_id from public.questions where question like '¿Qué significa la "S"%';
-  insert into public.options (question_id, text, is_correct) values
-    (q_id, 'Segregación de Interfaces', false),
-    (q_id, 'Sustitución de Liskov', false),
-    (q_id, 'Single Responsibility (Responsabilidad Única)', true),
-    (q_id, 'Servicios Separados', false);
+  -- Actualizar sesión
+  update public.game_sessions
+  set
+    aciertos      = aciertos + case when p_is_correct then 1 else 0 end,
+    errores       = errores  + case when p_is_correct then 0 else 1 end,
+    pts_preguntas = pts_preguntas + case when p_item_type = 'pregunta' then p_pts else 0 end,
+    pts_retos     = pts_retos     + case when p_item_type = 'reto'     then p_pts else 0 end
+  where user_id = uid;
 
-  -- Q9: SOLID D
-  select id into q_id from public.questions where question like '¿Qué principio SOLID dice que las clases%';
-  insert into public.options (question_id, text, is_correct) values
-    (q_id, 'Abierto/Cerrado', false),
-    (q_id, 'Segregación de Interfaces', false),
-    (q_id, 'Responsabilidad Única', false),
-    (q_id, 'Inversión de Dependencias', true);
+  -- Sumar al perfil si correcto
+  if p_is_correct and p_pts > 0 then
+    update public.profiles
+    set points = points + p_pts, updated_at = now()
+    where id = uid;
 
-  -- Q10: API Gateway
-  select id into q_id from public.questions where question like '¿Cuál es la función de la API Gateway%';
-  insert into public.options (question_id, text, is_correct) values
-    (q_id, 'Almacenar todos los datos de los microservicios', false),
-    (q_id, 'Punto único de entrada que enruta peticiones a microservicios', true),
-    (q_id, 'Reemplazar la base de datos en microservicios', false),
-    (q_id, 'Generar la interfaz de usuario', false);
-end $$;
+    insert into public.points_history (user_id, points, reason)
+    values (uid, p_pts, 'Juego: ' || p_item_id);
+  end if;
+end;
+$$;
+
+-- ─── Vista: ranking completo (solo organizadores) ────────────────────────────
+create or replace view public.ranking_completo as
+select
+  p.id,
+  p.full_name,
+  p.role,
+  p.points                                    as puntos_perfil,
+  coalesce(gs.aciertos, 0)                    as aciertos,
+  coalesce(gs.errores, 0)                     as errores,
+  coalesce(gs.pts_preguntas, 0)               as pts_preguntas,
+  coalesce(gs.pts_retos, 0)                   as pts_retos,
+  coalesce(sum_adj.bonus, 0)                  as bonus,
+  coalesce(sum_adj.descuento, 0)              as descuento,
+  gs.status                                   as estado_juego,
+  gs.started_at,
+  gs.completed_at,
+  (coalesce(gs.pts_preguntas,0) + coalesce(gs.pts_retos,0)
+    + coalesce(sum_adj.bonus,0) + coalesce(sum_adj.descuento,0)
+  )                                           as puntaje_final,
+  case
+    when coalesce(gs.aciertos,0) + coalesce(gs.errores,0) = 0 then 0
+    else round(
+      100.0 * coalesce(gs.aciertos,0) /
+      (coalesce(gs.aciertos,0) + coalesce(gs.errores,0))
+    )
+  end                                         as porcentaje_aciertos
+from public.profiles p
+left join public.game_sessions gs on gs.user_id = p.id
+left join lateral (
+  select
+    coalesce(sum(cantidad) filter (where tipo = 'bonus'),     0) as bonus,
+    coalesce(sum(cantidad) filter (where tipo = 'descuento'), 0) as descuento
+  from public.point_adjustments
+  where jugador_id = p.id
+) sum_adj on true
+where p.role = 'jugador'
+order by puntaje_final desc;
+
+-- ─── Seed: preguntas en Supabase (opcional, el juego usa gameData.js local) ──
+-- Las preguntas del juego están en src/data/gameData.js (sin necesidad de BD).
+-- Las tablas questions/options/answers son para el cuestionario de las guías.

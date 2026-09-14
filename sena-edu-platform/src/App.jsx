@@ -8,29 +8,35 @@ import LoginPage    from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 
 // Páginas principales
-import HomePage      from './pages/HomePage'
-import PlaygroundPage from './pages/PlaygroundPage'
-import PerfilPage    from './pages/PerfilPage'
+import HomePage        from './pages/HomePage'
+import PlaygroundPage  from './pages/PlaygroundPage'
+import PerfilPage      from './pages/PerfilPage'
 import LeaderboardPage from './pages/LeaderboardPage'
+import JuegoPage       from './pages/JuegoPage'
+
+// Organizador
+import RankingPage          from './pages/organizador/RankingPage'
+import EstadisticasPage     from './pages/organizador/EstadisticasPage'
+import GestionJugadoresPage from './pages/organizador/GestionJugadoresPage'
 
 // Guía 1
-import Guia1IndexPage    from './pages/guia1/Guia1IndexPage'
-import IntroBackendPage  from './pages/guia1/IntroBackendPage'
-import HttpPage          from './pages/guia1/HttpPage'
-import ServidoresPage    from './pages/guia1/ServidoresPage'
-import LenguajesPage     from './pages/guia1/LenguajesPage'
-import AlgoritmosPage    from './pages/guia1/AlgoritmosPage'
-import QuizGuia1Page     from './pages/guia1/QuizGuia1Page'
+import Guia1IndexPage   from './pages/guia1/Guia1IndexPage'
+import IntroBackendPage from './pages/guia1/IntroBackendPage'
+import HttpPage         from './pages/guia1/HttpPage'
+import ServidoresPage   from './pages/guia1/ServidoresPage'
+import LenguajesPage    from './pages/guia1/LenguajesPage'
+import AlgoritmosPage   from './pages/guia1/AlgoritmosPage'
+import QuizGuia1Page    from './pages/guia1/QuizGuia1Page'
 
 // Guía 3
-import Guia3IndexPage          from './pages/guia3/Guia3IndexPage'
-import IntroArquitecturaPage   from './pages/guia3/IntroArquitecturaPage'
-import MVCPage                 from './pages/guia3/MVCPage'
-import CapasPage               from './pages/guia3/CapasPage'
-import MicroserviciosPage      from './pages/guia3/MicroserviciosPage'
-import SolidPage               from './pages/guia3/SolidPage'
-import PatronesPage            from './pages/guia3/PatronesPage'
-import QuizGuia3Page           from './pages/guia3/QuizGuia3Page'
+import Guia3IndexPage        from './pages/guia3/Guia3IndexPage'
+import IntroArquitecturaPage from './pages/guia3/IntroArquitecturaPage'
+import MVCPage               from './pages/guia3/MVCPage'
+import CapasPage             from './pages/guia3/CapasPage'
+import MicroserviciosPage    from './pages/guia3/MicroserviciosPage'
+import SolidPage             from './pages/guia3/SolidPage'
+import PatronesPage          from './pages/guia3/PatronesPage'
+import QuizGuia3Page         from './pages/guia3/QuizGuia3Page'
 
 export default function App() {
   return (
@@ -44,9 +50,17 @@ export default function App() {
           {/* ── App con layout ────────────────────────────────────────── */}
           <Route element={<AppLayout />}>
             <Route index element={<HomePage />} />
-            <Route path="/playground" element={<PlaygroundPage />} />
-            <Route path="/perfil"     element={<PerfilPage />} />
+            <Route path="/playground"  element={<PlaygroundPage />} />
+            <Route path="/perfil"      element={<PerfilPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
+
+            {/* Juego educativo */}
+            <Route path="/juego" element={<JuegoPage />} />
+
+            {/* Panel organizador */}
+            <Route path="/organizador/ranking"   element={<RankingPage />} />
+            <Route path="/organizador/estadisticas" element={<EstadisticasPage />} />
+            <Route path="/organizador/jugadores" element={<GestionJugadoresPage />} />
 
             {/* Guía 1 */}
             <Route path="/guia1"               element={<Guia1IndexPage />} />
@@ -60,12 +74,12 @@ export default function App() {
             {/* Guía 3 */}
             <Route path="/guia3"                    element={<Guia3IndexPage />} />
             <Route path="/guia3/intro"              element={<IntroArquitecturaPage />} />
-            <Route path="/guia3/mvc"                element={<MVCPage />} />
-            <Route path="/guia3/capas"              element={<CapasPage />} />
-            <Route path="/guia3/microservicios"     element={<MicroserviciosPage />} />
-            <Route path="/guia3/solid"              element={<SolidPage />} />
-            <Route path="/guia3/patrones"           element={<PatronesPage />} />
-            <Route path="/guia3/quiz"               element={<QuizGuia3Page />} />
+            <Route path="/guia3/mvc"               element={<MVCPage />} />
+            <Route path="/guia3/capas"             element={<CapasPage />} />
+            <Route path="/guia3/microservicios"    element={<MicroserviciosPage />} />
+            <Route path="/guia3/solid"             element={<SolidPage />} />
+            <Route path="/guia3/patrones"          element={<PatronesPage />} />
+            <Route path="/guia3/quiz"              element={<QuizGuia3Page />} />
 
             {/* Catch-all */}
             <Route path="*" element={<Navigate to="/" replace />} />

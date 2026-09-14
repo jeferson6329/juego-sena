@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
 
   // ── Acciones ─────────────────────────────────────────────────────────────
 
-  const signUp = async (email, password, fullName, role = 'aprendiz') => {
+  const signUp = async (email, password, fullName, role = 'jugador') => {
     setError(null)
     const { data, error } = await authHelpers.signUp({ email, password, fullName, role })
     if (error) setError(error.message)
@@ -73,7 +73,12 @@ export function AuthProvider({ children }) {
     signOut,
     refreshProfile,
     isAuthenticated: !!user,
-    isInstructor: profile?.role === 'instructor' || profile?.role === 'admin',
+    // Rol organizador (antes isInstructor)
+    isOrganizador: profile?.role === 'organizador' || profile?.role === 'admin',
+    // Mantener isInstructor como alias de compatibilidad
+    isInstructor:  profile?.role === 'organizador' || profile?.role === 'admin',
+    // Rol jugador
+    isJugador: profile?.role === 'jugador',
   }
 
   return (
