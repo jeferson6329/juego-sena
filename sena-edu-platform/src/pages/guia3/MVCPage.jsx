@@ -6,6 +6,25 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 
 export default function MVCPage() {
+  // Plantilla Jinja2 definida como string para evitar conflicto con parser JSX
+  const VISTA_JINJA_TEMPLATE = [
+    '{# VISTA: solo presentación, recibe datos del controlador #}',
+    '<!DOCTYPE html>',
+    '<html lang="es">',
+    '<head><title>Productos</title></head>',
+    '<body>',
+    '  <h1>Catálogo de Productos</h1>',
+    '  <ul>',
+    '    {% for p in productos %}',
+    '      <li>',
+    '        <a href="/productos/{{ p.id }}">{{ p.nombre }}</a>',
+    '        — ${{ p.precio }}',
+    '      </li>',
+    '    {% endfor %}',
+    '  </ul>',
+    '</body>',
+    '</html>',
+  ].join('\n')
   return (
     <div className="space-y-2">
       <div className="mb-6">
@@ -136,22 +155,7 @@ def detalle_producto(id):
         abort(404)
     return render_template('productos/detalle.html', producto=producto)`} />
 
-        <CodeBlock language="python" title="templates/productos/lista.html – Vista" code={`{# VISTA: solo presentación, recibe datos del controlador #}
-<!DOCTYPE html>
-<html lang="es">
-<head><title>Productos</title></head>
-<body>
-  <h1>Catálogo de Productos</h1>
-  <ul>
-    {% for p in productos %}
-      <li>
-        <a href="/productos/{{ p.id }}">{{ p.nombre }}</a>
-        — ${{ "%.0f"|format(p.precio) }}
-      </li>
-    {% endfor %}
-  </ul>
-</body>
-</html>`} />
+        <CodeBlock language="python" title="templates/productos/lista.html – Vista" code={VISTA_JINJA_TEMPLATE} />
 
         <h3 className="text-lg font-semibold text-white mt-6 mb-3">Estructura de carpetas MVC</h3>
         <div className="code-block text-xs text-gray-300 leading-relaxed">

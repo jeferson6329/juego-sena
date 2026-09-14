@@ -2,8 +2,9 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useProgress } from '../context/ProgressContext'
 import {
-  Server, Layers, Zap, Trophy, ArrowRight,
-  BookOpen, Target, Star, CheckCircle2,
+  Server, Layers, Zap, ArrowRight,
+  BookOpen, Star, CheckCircle2,
+  Gamepad2, BarChart2, Users, Crown,
 } from 'lucide-react'
 
 function GuideCard({ to, icon: Icon, color, title, subtitle, guideId }) {
@@ -47,15 +48,69 @@ function StatCard({ icon: Icon, value, label, color }) {
   )
 }
 
-export default function HomePage() {
-  const { user, profile } = useAuth()
-  const { getGuideProgress, completed } = useProgress()
-  const g1 = getGuideProgress('guia1')
-  const g3 = getGuideProgress('guia3')
-  const totalDone = completed.length
+// ─── Panel organizador en home ────────────────────────────────────────────────
+function PanelOrganizador() {
+  return (
+    <div className="space-y-6">
+      {/* Hero organizador */}
+      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 via-gray-900 to-yellow-500/10 border border-yellow-500/20 p-6 sm:p-8">
+        <div className="relative">
+          <p className="text-yellow-400 text-sm font-semibold mb-2 flex items-center gap-1.5">
+            <Crown size={14} /> Panel del Organizador
+          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+            Gestiona el juego educativo
+          </h1>
+          <p className="text-gray-400 max-w-xl mb-6">
+            Consulta el ranking, las estadísticas de los participantes y aplica bonus o descuentos de puntos.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link to="/organizador/ranking" className="btn-primary">
+              <Crown size={16} /> Ver ranking
+            </Link>
+            <Link to="/organizador/estadisticas" className="btn-secondary">
+              <BarChart2 size={16} /> Estadísticas
+            </Link>
+          </div>
+        </div>
+      </div>
 
-  const firstName = profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Aprendiz'
+      {/* Accesos rápidos organizador */}
+      <div className="grid sm:grid-cols-3 gap-4">
+        <Link to="/organizador/ranking" className="card-hover group flex flex-col gap-3">
+          <div className="w-9 h-9 rounded-xl bg-yellow-500/20 flex items-center justify-center">
+            <Crown size={18} className="text-yellow-400" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-white mb-1">Ranking completo</h3>
+            <p className="text-gray-400 text-sm">Posiciones, puntos, aciertos, errores y puntaje final de todos los jugadores.</p>
+          </div>
+        </Link>
+        <Link to="/organizador/estadisticas" className="card-hover group flex flex-col gap-3">
+          <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center">
+            <BarChart2 size={18} className="text-blue-400" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-white mb-1">Estadísticas</h3>
+            <p className="text-gray-400 text-sm">Rendimiento por tema, preguntas más falladas y recomendaciones de refuerzo.</p>
+          </div>
+        </Link>
+        <Link to="/organizador/jugadores" className="card-hover group flex flex-col gap-3">
+          <div className="w-9 h-9 rounded-xl bg-sena-green/20 flex items-center justify-center">
+            <Users size={18} className="text-sena-green" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-white mb-1">Gestión de jugadores</h3>
+            <p className="text-gray-400 text-sm">Aplica bonus y descuentos de puntos con motivo registrado.</p>
+          </div>
+        </Link>
+      </div>
+    </div>
+  )
+}
 
+// ─── Panel jugador en home ────────────────────────────────────────────────────
+function PanelJugador({ user, profile, g1, g3, totalDone, firstName }) {
   return (
     <div className="space-y-8">
       {/* Hero */}
@@ -73,23 +128,39 @@ export default function HomePage() {
             ejemplos en vivo y ejercicios prácticos. Gana puntos conforme avanzas.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Link to="/guia1" className="btn-primary">
-              <BookOpen size={16} /> Comenzar Guía 1
+            <Link to="/juego" className="btn-primary">
+              <Gamepad2 size={16} /> Jugar ahora
             </Link>
-            <Link to="/playground" className="btn-secondary">
-              <Zap size={16} /> Editor de código
+            <Link to="/guia1" className="btn-secondary">
+              <BookOpen size={16} /> Estudiar Guía 1
             </Link>
           </div>
+        </div>
+      </div>
+
+      {/* Llamado al juego */}
+      <div className="card border-sena-green/30 bg-gradient-to-r from-sena-green/10 to-transparent">
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="text-4xl shrink-0">🎮</div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-bold text-white mb-1">Juego Educativo</h2>
+            <p className="text-gray-400 text-sm">
+              {PREGUNTAS_TOTAL} preguntas · {RETOS_TOTAL} retos de pseudocódigo · ¡Demuestra lo que aprendiste!
+            </p>
+          </div>
+          <Link to="/juego" className="btn-primary shrink-0">
+            <Gamepad2 size={15} /> Jugar
+          </Link>
         </div>
       </div>
 
       {/* Stats */}
       {user && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <StatCard icon={Star}        value={profile?.points ?? 0}  label="Puntos totales"    color="bg-yellow-500/80" />
-          <StatCard icon={CheckCircle2} value={totalDone}             label="Secciones hechas"  color="bg-sena-green/80" />
-          <StatCard icon={Target}      value={`${g1.pct}%`}          label="Progreso Guía 1"   color="bg-blue-500/80" />
-          <StatCard icon={Target}      value={`${g3.pct}%`}          label="Progreso Guía 3"   color="bg-purple-500/80" />
+          <StatCard icon={Star}         value={profile?.points ?? 0}  label="Puntos totales"   color="bg-yellow-500/80" />
+          <StatCard icon={CheckCircle2} value={totalDone}              label="Secciones hechas"  color="bg-sena-green/80" />
+          <StatCard icon={Target}       value={`${g1.pct}%`}           label="Progreso Guía 1"  color="bg-blue-500/80" />
+          <StatCard icon={Target}       value={`${g3.pct}%`}           label="Progreso Guía 3"  color="bg-purple-500/80" />
         </div>
       )}
 
@@ -117,7 +188,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Accesos rápidos */}
+      {/* Herramientas */}
       <div>
         <h2 className="section-title">Herramientas</h2>
         <div className="grid sm:grid-cols-3 gap-4">
@@ -130,15 +201,6 @@ export default function HomePage() {
               <p className="text-gray-400 text-sm">Editor con vista previa en vivo. Escribe HTML/CSS/JS y ve el resultado al instante.</p>
             </div>
           </Link>
-          <Link to="/leaderboard" className="card-hover group flex flex-col gap-3">
-            <div className="w-9 h-9 rounded-xl bg-yellow-500/20 flex items-center justify-center">
-              <Trophy size={18} className="text-yellow-400" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-white mb-1">Ranking</h3>
-              <p className="text-gray-400 text-sm">Tabla de posiciones con los aprendices que más puntos han acumulado.</p>
-            </div>
-          </Link>
           <Link to="/perfil" className="card-hover group flex flex-col gap-3">
             <div className="w-9 h-9 rounded-xl bg-pink-500/20 flex items-center justify-center">
               <Star size={18} className="text-pink-400" />
@@ -146,6 +208,15 @@ export default function HomePage() {
             <div>
               <h3 className="font-semibold text-white mb-1">Mi perfil</h3>
               <p className="text-gray-400 text-sm">Revisa tu progreso, puntos, insignias y el historial de actividad.</p>
+            </div>
+          </Link>
+          <Link to="/juego" className="card-hover group flex flex-col gap-3">
+            <div className="w-9 h-9 rounded-xl bg-cyan-500/20 flex items-center justify-center">
+              <Gamepad2 size={18} className="text-cyan-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-white mb-1">Juego educativo</h3>
+              <p className="text-gray-400 text-sm">Responde preguntas y construye pseudocódigo para ganar puntos.</p>
             </div>
           </Link>
         </div>
@@ -156,11 +227,40 @@ export default function HomePage() {
         <h2 className="font-bold text-white mb-2">Sobre este programa</h2>
         <p className="text-gray-400 text-sm leading-relaxed">
           Estas guías hacen parte de la competencia <strong className="text-white">Construcción del Software</strong> del programa
-          <strong className="text-white"> Análisis y Desarrollo de Software</strong> (código 228118) del SENA.
+          {' '}<strong className="text-white">Análisis y Desarrollo de Software</strong> (código 228118) del SENA.
           El objetivo es que el aprendiz codifique el software de acuerdo con el diseño establecido,
           aplicando buenas prácticas de arquitectura, patrones de diseño y principios SOLID.
         </p>
       </div>
     </div>
+  )
+}
+
+// ─── Constantes para la tarjeta de juego ─────────────────────────────────────
+import { PREGUNTAS, RETOS_PSEUDOCODIGO } from '../data/gameData'
+const PREGUNTAS_TOTAL = PREGUNTAS.length
+const RETOS_TOTAL     = RETOS_PSEUDOCODIGO.length
+
+// ─── Página principal ─────────────────────────────────────────────────────────
+export default function HomePage() {
+  const { user, profile, isOrganizador } = useAuth()
+  const { getGuideProgress, completed } = useProgress()
+  const g1 = getGuideProgress('guia1')
+  const g3 = getGuideProgress('guia3')
+  const totalDone = completed.length
+
+  const firstName = profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Aprendiz'
+
+  if (isOrganizador) return <PanelOrganizador />
+
+  return (
+    <PanelJugador
+      user={user}
+      profile={profile}
+      g1={g1}
+      g3={g3}
+      totalDone={totalDone}
+      firstName={firstName}
+    />
   )
 }

@@ -6,7 +6,7 @@ import { Eye, EyeOff, UserPlus, AlertCircle, CheckCircle2 } from 'lucide-react'
 export default function RegisterPage() {
   const { signUp } = useAuth()
   const navigate   = useNavigate()
-  const [form, setForm] = useState({ fullName: '', email: '', password: '', role: 'aprendiz' })
+  const [form, setForm] = useState({ fullName: '', email: '', password: '', role: 'jugador' })
   const [showPwd, setShowPwd]   = useState(false)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
@@ -85,8 +85,8 @@ export default function RegisterPage() {
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1.5">Rol</label>
             <select name="role" value={form.role} onChange={handle} className="input">
-              <option value="aprendiz">Aprendiz</option>
-              <option value="instructor">Instructor</option>
+              <option value="jugador">Jugador</option>
+              <option value="organizador">Organizador</option>
             </select>
           </div>
 
