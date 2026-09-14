@@ -1,84 +1,95 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
-import { supabase, authHelpers, profileHelpers } from '../lib/supabase'
+import { createContext, useContext, useState, useEffect } from 'react'
+
+// ─── Clave de acceso para organizadores ──────────────────────────────────────
+// Cambia este valor si quieres una clave diferente
+const ORGANIZADOR_CLAVE = 'sena2024'
+
+const STORAGE_KEY_NOMBRE    = 'sena_jugador_nombre'
+const STORAGE_KEY_ROL       = 'sena_jugador_rol'
+const STORAGE_KEY_PUNTOS    = 'sena_jugador_puntos'
 
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser]       = useState(null)
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState(null)
+  const [nombre, setNombre]       = useState(() => localStorage.getItem(STORAGE_KEY_NOMBRE) || null)
+  const [rol, setRol]             = useState(() => localStorage.getItem(STORAGE_KEY_ROL) || null)
+  const [puntos, setPuntos]       = useState(() => parseInt(localStorage.getItem(STORAGE_KEY_PUNTOS) || '0'))
+  const [error, setError]         = useState(null)
 
-  // Carga el perfil del usuario desde la tabla profiles
-  const loadProfile = useCallback(async (userId) => {
-    const { data, error } = await profileHelpers.getProfile(userId)
-    if (!error && data) setProfile(data)
-  }, [])
-
-  // Escucha cambios de sesión de Supabase
+  // Sincronizar puntos al localStorage cuando cambian
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) loadProfile(session.user.id)
-      setLoading(false)
-    })
+    localStorage.setItem(STORAGE_KEY_PUNTOS, String(puntos))
+  }, [puntos])
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          await loadProfile(session.user.id)
-        } else {
-          setProfile(null)
-        }
-        setLoading(false)
-      }
-    )
-    return () => subscription.unsubscribe()
-  }, [loadProfile])
-
-  // ── Acciones ─────────────────────────────────────────────────────────────
-
-  const signUp = async (email, password, fullName, role = 'jugador') => {
+  // ── Entrar como jugador ───────────────────────────────────────────────────
+  const entrarComoJugador = (nombreIngresado) => {
+    const n = nombreIngresado.trim()
+    if (!n) { setError('Escribe tu nombre para continuar.'); return false }
+    setNombre(n)
+    setRol('jugador')
     setError(null)
-    const { data, error } = await authHelpers.signUp({ email, password, fullName, role })
-    if (error) setError(error.message)
-    return { data, error }
+    localStorage.setItem(STORAGE_KEY_NOMBRE, n)
+    localStorage.setItem(STORAGE_KEY_ROL, 'jugador')
+    return true
   }
 
-  const signIn = async (email, password) => {
+  // ── Entrar como organizador ───────────────────────────────────────────────
+  const entrarComoOrganizador = (clave) => {
+    if (clave !== ORGANIZADOR_CLAVE) {
+      setError('Clave incorrecta.')
+      return false
+    }
+    setNombre('Organizador')
+    setRol('organizador')
     setError(null)
-    const { data, error } = await authHelpers.signIn({ email, password })
-    if (error) setError(error.message)
-    return { data, error }
+    localStorage.setItem(STORAGE_KEY_NOMBRE, 'Organizador')
+    localStorage.setItem(STORAGE_KEY_ROL, 'organizador')
+    return true
   }
 
-  const signOut = async () => {
-    await authHelpers.signOut()
-    setUser(null)
-    setProfile(null)
+  // ── Salir ─────────────────────────────────────────────────────────────────
+  const salir = () => {
+    setNombre(null)
+    setRol(null)
+    setError(null)
+    localStorage.removeItem(STORAGE_KEY_NOMBRE)
+    localStorage.removeItem(STORAGE_KEY_ROL)
   }
 
-  const refreshProfile = () => {
-    if (user) loadProfile(user.id)
+  // ── Sumar puntos localmente ───────────────────────────────────────────────
+  const agregarPuntos = (cantidad) => {
+    setPuntos(prev => prev + cantidad)
   }
+
+  // ── Alias de compatibilidad con código existente ──────────────────────────
+  // Muchos componentes usan user, profile, isAuthenticated — los mantenemos
+  const user    = nombre ? { id: nombre, email: nombre } : null
+  const profile = nombre ? { full_name: nombre, role: rol, points: puntos } : null
 
   const value = {
+    // Nuevos
+    nombre,
+    rol,
+    puntos,
+    entrarComoJugador,
+    entrarComoOrganizador,
+    salir,
+    agregarPuntos,
+    error,
+    setError,
+    // Alias de compatibilidad
     user,
     profile,
-    loading,
-    error,
-    signUp,
-    signIn,
-    signOut,
-    refreshProfile,
-    isAuthenticated: !!user,
-    // Rol organizador (antes isInstructor)
-    isOrganizador: profile?.role === 'organizador' || profile?.role === 'admin',
-    // Mantener isInstructor como alias de compatibilidad
-    isInstructor:  profile?.role === 'organizador' || profile?.role === 'admin',
-    // Rol jugador
-    isJugador: profile?.role === 'jugador',
+    loading: false,
+    isAuthenticated: !!nombre,
+    isOrganizador: rol === 'organizador',
+    isInstructor:  rol === 'organizador',   // alias legado
+    isJugador:     rol === 'jugador',
+    // Stubs de métodos que ya no hacen nada (compatibilidad)
+    signUp:         async () => ({ data: null, error: null }),
+    signIn:         async () => ({ data: null, error: null }),
+    signOut:        salir,
+    refreshProfile: () => {},
   }
 
   return (

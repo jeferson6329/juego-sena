@@ -5,10 +5,6 @@ node_modules/
 dist/
 dist-ssr/
 
-# Variables de entorno (contienen credenciales)
-.env.local
-.env.*.local
-
 # Logs
 *.log
 npm-debug.log*

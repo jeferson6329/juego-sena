@@ -495,6 +495,7 @@ export default function GameEngine({ item, index, total, onAnswer, onNext, answe
     if (tipo === TIPOS.CONSTRUIR_PSEUDO || item.bloquesDisponibles) {
       return (
         <PseudoBuilder
+          key={item.id}
           reto={item}
           onAnswer={onAnswer}
           answered={answered}
@@ -504,27 +505,27 @@ export default function GameEngine({ item, index, total, onAnswer, onNext, answe
 
     // Tipos con código fuente
     if ([TIPOS.IDENTIFICAR_ERROR, TIPOS.SALIDA_ALGORITMO, TIPOS.ESTRUCTURA_CORRECTA].includes(tipo) && item.codigo) {
-      return <PreguntaConCodigo pregunta={item} onAnswer={onAnswer} answered={answered} />
+      return <PreguntaConCodigo key={item.id} pregunta={item} onAnswer={onAnswer} answered={answered} />
     }
 
     // Ordenar pasos
     if (tipo === TIPOS.ORDENAR || tipo === TIPOS.FLUJO_PETICION) {
-      return <PreguntaOrdenar pregunta={item} onAnswer={onAnswer} answered={answered} />
+      return <PreguntaOrdenar key={item.id} pregunta={item} onAnswer={onAnswer} answered={answered} />
     }
 
     // Relacionar conceptos / SOLID
     if (tipo === TIPOS.RELACIONAR || tipo === TIPOS.IDENTIFICAR_SOLID) {
-      return <PreguntaRelacionar pregunta={item} onAnswer={onAnswer} answered={answered} />
+      return <PreguntaRelacionar key={item.id} pregunta={item} onAnswer={onAnswer} answered={answered} />
     }
 
     // Identificar MVC
     if (tipo === TIPOS.IDENTIFICAR_MVC) {
-      return <PreguntaIdentificarMVC pregunta={item} onAnswer={onAnswer} answered={answered} />
+      return <PreguntaIdentificarMVC key={item.id} pregunta={item} onAnswer={onAnswer} answered={answered} />
     }
 
     // Selección múltiple / Verdadero-Falso / Responsabilidad (con opciones)
     if (item.opciones) {
-      return <PreguntaSeleccion pregunta={item} onAnswer={onAnswer} answered={answered} />
+      return <PreguntaSeleccion key={item.id} pregunta={item} onAnswer={onAnswer} answered={answered} />
     }
 
     return <p className="text-gray-500 text-sm">Tipo de pregunta no soportado aún.</p>
@@ -546,7 +547,7 @@ export default function GameEngine({ item, index, total, onAnswer, onNext, answe
       </div>
 
       {/* Tarjeta de pregunta */}
-      <div className="card border-gray-700">
+      <div key={item.id} className="card border-gray-700">
         {/* Meta */}
         <div className="flex items-center gap-2 flex-wrap mb-4">
           <NivelBadge nivel={item.nivel} />

@@ -6,10 +6,9 @@ import {
   ChevronRight, CheckCircle2, Circle, Users, BarChart2, Crown,
 } from 'lucide-react'
 
-// ─── Navegación para JUGADORES ────────────────────────────────────────────────
 const NAV_JUGADOR = [
-  { to: '/', icon: Home, label: 'Inicio' },
-  { to: '/juego', icon: Gamepad2, label: '🎮 Juego educativo', highlight: true },
+  { to: '/',          icon: Home,     label: 'Inicio', end: true },
+  { to: '/juego',     icon: Gamepad2, label: '🎮 Juego educativo', highlight: true },
   {
     label: 'Guía 1 – Back-end', icon: Server, to: '/guia1',
     children: [
@@ -37,30 +36,24 @@ const NAV_JUGADOR = [
   { to: '/perfil',     icon: User, label: 'Mi perfil' },
 ]
 
-// ─── Navegación para ORGANIZADORES ───────────────────────────────────────────
 const NAV_ORGANIZADOR = [
-  { to: '/', icon: Home, label: 'Inicio' },
-  { to: '/organizador/ranking',      icon: Crown,    label: 'Ranking',          highlight: true },
+  { to: '/',                         icon: Home,      label: 'Inicio', end: true },
+  { to: '/organizador/ranking',      icon: Crown,     label: 'Ranking',           highlight: true },
   { to: '/organizador/estadisticas', icon: BarChart2, label: 'Estadísticas' },
-  { to: '/organizador/jugadores',    icon: Users,    label: 'Gestión jugadores' },
-  { to: '/playground', icon: Zap,  label: 'Editor de código' },
-  { to: '/perfil',     icon: User, label: 'Mi perfil' },
+  { to: '/organizador/jugadores',    icon: Users,     label: 'Gestión jugadores' },
+  { to: '/playground',               icon: Zap,       label: 'Editor de código' },
 ]
 
-// ─── Sub-enlace de sección ────────────────────────────────────────────────────
 function SectionLink({ to, label, sid, guideId, onClick }) {
   const { isSectionComplete } = useProgress()
   const done = sid ? isSectionComplete(guideId, sid) : false
-
   return (
     <NavLink
       to={to}
       onClick={onClick}
       className={({ isActive }) =>
         `flex items-center gap-2 pl-8 pr-3 py-1.5 rounded-lg text-xs transition-all duration-150 ${
-          isActive
-            ? 'bg-sena-green/15 text-sena-green font-medium'
-            : 'text-gray-400 hover:text-white hover:bg-gray-800'
+          isActive ? 'bg-sena-green/15 text-sena-green font-medium' : 'text-gray-400 hover:text-white hover:bg-gray-800'
         }`
       }
     >
@@ -73,50 +66,54 @@ function SectionLink({ to, label, sid, guideId, onClick }) {
   )
 }
 
-// ─── Sidebar ──────────────────────────────────────────────────────────────────
 export default function Sidebar({ open, onClose }) {
   const location = useLocation()
-  const { isOrganizador } = useAuth()
+  const { isOrganizador, nombre, puntos } = useAuth()
   const { getGuideProgress } = useProgress()
-
   const g1 = getGuideProgress('guia1')
   const g3 = getGuideProgress('guia3')
-
   const nav = isOrganizador ? NAV_ORGANIZADOR : NAV_JUGADOR
 
   return (
     <>
-      {/* Overlay mobile */}
-      {open && (
-        <div
-          className="fixed inset-0 bg-black/60 z-30 lg:hidden"
-          onClick={onClose}
-        />
-      )}
+      {open && <div className="fixed inset-0 bg-black/60 z-30 lg:hidden" onClick={onClose} />}
 
-      <aside
-        className={`fixed top-14 left-0 bottom-0 w-64 bg-gray-900 border-r border-gray-800 z-40
-          overflow-y-auto transition-transform duration-300
-          ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
+      <aside className={`fixed top-14 left-0 bottom-0 w-64 bg-gray-900 border-r border-gray-800 z-40
+        overflow-y-auto transition-transform duration-300
+        ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
       >
+        {/* Info del usuario */}
+        <div className="p-3 border-b border-gray-800">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-sena-green/20 border border-sena-green/30 flex items-center justify-center text-sena-green font-bold text-sm uppercase shrink-0">
+              {nombre?.[0] || '?'}
+            </div>
+            <div className="min-w-0">
+              <p className="text-white text-sm font-medium truncate">{nombre}</p>
+              {isOrganizador
+                ? <p className="text-yellow-400 text-[11px] flex items-center gap-1"><Crown size={9} /> Organizador</p>
+                : <p className="text-yellow-400 text-[11px]">⭐ {puntos} pts</p>
+              }
+            </div>
+          </div>
+        </div>
+
         <nav className="p-3 space-y-1">
-          {/* Badge de rol */}
           {isOrganizador && (
-            <div className="mb-3 px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+            <div className="mb-2 px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
               <p className="text-xs text-yellow-400 font-semibold flex items-center gap-1.5">
-                <Crown size={12} /> Panel Organizador
+                <Crown size={11} /> Panel Organizador
               </p>
             </div>
           )}
 
           {nav.map((item) => {
-            // Ítem sin hijos
             if (!item.children) {
               return (
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  end={item.to === '/'}
+                  end={!!item.end}
                   className={({ isActive }) =>
                     item.highlight
                       ? isActive
@@ -132,7 +129,6 @@ export default function Sidebar({ open, onClose }) {
               )
             }
 
-            // Ítem con hijos (guías)
             const guideId = item.to.replace('/', '')
             const prog = guideId === 'guia1' ? g1 : g3
             const isExpanded = location.pathname.startsWith(item.to)
@@ -141,9 +137,7 @@ export default function Sidebar({ open, onClose }) {
               <div key={item.label}>
                 <NavLink
                   to={item.to}
-                  className={({ isActive }) =>
-                    `${isActive ? 'nav-link-active' : 'nav-link-inactive'} justify-between`
-                  }
+                  className={({ isActive }) => `${isActive ? 'nav-link-active' : 'nav-link-inactive'} justify-between`}
                   onClick={onClose}
                 >
                   <span className="flex items-center gap-2">
@@ -152,29 +146,18 @@ export default function Sidebar({ open, onClose }) {
                   </span>
                   <span className="flex items-center gap-1.5">
                     <span className="text-[10px] text-gray-500">{prog.done}/{prog.total}</span>
-                    <ChevronRight
-                      size={13}
-                      className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                    />
+                    <ChevronRight size={13} className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                   </span>
                 </NavLink>
-
-                {/* Mini progress bar */}
                 <div className="px-3 pb-1">
                   <div className="progress-bar h-1">
                     <div className="progress-fill" style={{ width: `${prog.pct}%` }} />
                   </div>
                 </div>
-
                 {isExpanded && (
                   <div className="space-y-0.5 mt-0.5">
                     {item.children.map(child => (
-                      <SectionLink
-                        key={child.to}
-                        {...child}
-                        guideId={guideId}
-                        onClick={onClose}
-                      />
+                      <SectionLink key={child.to} {...child} guideId={guideId} onClick={onClose} />
                     ))}
                   </div>
                 )}
@@ -183,11 +166,9 @@ export default function Sidebar({ open, onClose }) {
           })}
         </nav>
 
-        {/* Footer */}
         <div className="p-4 border-t border-gray-800 mt-2">
           <p className="text-[10px] text-gray-600 text-center">
-            SENA – Análisis y Desarrollo de Software<br />
-            Programa 228118
+            SENA – Análisis y Desarrollo de Software<br />Programa 228118
           </p>
         </div>
       </aside>

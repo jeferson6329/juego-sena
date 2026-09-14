@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { useProgress } from '../context/ProgressContext'
 import {
   Server, Layers, Zap, ArrowRight,
-  BookOpen, Star, CheckCircle2,
+  BookOpen, Star, CheckCircle2, Target,
   Gamepad2, BarChart2, Users, Crown,
 } from 'lucide-react'
 
