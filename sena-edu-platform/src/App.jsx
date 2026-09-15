@@ -7,11 +7,12 @@ import AppLayout from './components/layout/AppLayout'
 import JuegoStandalonePage from './pages/JuegoStandalonePage'
 
 // Páginas principales
-import HomePage        from './pages/HomePage'
-import PlaygroundPage  from './pages/PlaygroundPage'
-import PerfilPage      from './pages/PerfilPage'
+import HomePage    from './pages/HomePage'
+import VivoPage    from './pages/VivoPage'
+import PlaygroundPage from './pages/PlaygroundPage'
+import PerfilPage  from './pages/PerfilPage'
 
-// Organizador (sin guard — acceso por URL directa)
+// Organizador
 import RankingPage          from './pages/organizador/RankingPage'
 import EstadisticasPage     from './pages/organizador/EstadisticasPage'
 import GestionJugadoresPage from './pages/organizador/GestionJugadoresPage'
@@ -43,21 +44,27 @@ export default function App() {
           {/* ── Juego público — standalone sin layout ── */}
           <Route path="/juego" element={<JuegoStandalonePage />} />
 
-          {/* Aliases de rutas viejas */}
+          {/* Alias de compatibilidad */}
           <Route path="/entrada"  element={<Navigate to="/juego" replace />} />
           <Route path="/login"    element={<Navigate to="/" replace />} />
           <Route path="/register" element={<Navigate to="/" replace />} />
 
-          {/* ── Organizador — acceso libre por URL ── */}
+          {/* ── Con layout (plataforma + organizador) ── */}
           <Route element={<AppLayout />}>
+            {/* Inicio con panel admin */}
+            <Route index element={<HomePage />} />
+
+            {/* Juego en vivo (panel admin) */}
+            <Route path="/vivo" element={<VivoPage />} />
+
+            {/* Plataforma educativa */}
+            <Route path="/playground" element={<PlaygroundPage />} />
+            <Route path="/perfil"     element={<PerfilPage />} />
+
+            {/* Organizador */}
             <Route path="/organizador/ranking"      element={<RankingPage />} />
             <Route path="/organizador/estadisticas" element={<EstadisticasPage />} />
             <Route path="/organizador/jugadores"    element={<GestionJugadoresPage />} />
-
-            {/* ── Plataforma educativa ── */}
-            <Route index element={<HomePage />} />
-            <Route path="/playground"  element={<PlaygroundPage />} />
-            <Route path="/perfil"      element={<PerfilPage />} />
 
             {/* Guía 1 */}
             <Route path="/guia1"            element={<Guia1IndexPage />} />
