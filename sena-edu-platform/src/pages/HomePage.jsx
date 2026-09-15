@@ -147,11 +147,20 @@ export default function HomePage() {
     })
   }, [])
 
+  const [errorSesion, setErrorSesion] = useState(null)
+
   const handleIniciarJuego = async () => {
     setCreando(true)
+    setErrorSesion(null)
     const { codigo, error } = await crearSesion()
     setCreando(false)
-    if (error) { alert('Error al crear sesión. Verifica la conexión con Supabase.'); return }
+    if (error) {
+      // Mostrar el error real de Supabase para diagnosticar
+      const msg = error?.message || error?.code || JSON.stringify(error)
+      setErrorSesion(`Error Supabase: ${msg}`)
+      console.error('Error crearSesion:', error)
+      return
+    }
     localStorage.setItem(KEY_SESION_ADMIN, codigo)
     setSesionActiva(codigo)
     navigate('/vivo')
@@ -192,6 +201,14 @@ export default function HomePage() {
               <Zap size={16} /> Editor de código
             </Link>
           </div>
+          {errorSesion && (
+            <div className="mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <p className="text-red-400 text-xs font-mono">{errorSesion}</p>
+              <p className="text-gray-500 text-xs mt-1">
+                Asegúrate de haber ejecutado el SQL en Supabase (supabase-schema.sql).
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
