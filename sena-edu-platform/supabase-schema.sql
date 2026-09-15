@@ -13,6 +13,10 @@
 -- ─── Extensiones ─────────────────────────────────────────────────────────────
 create extension if not exists "uuid-ossp";
 
+-- Grant al schema public (necesario para anon key sin autenticación)
+grant usage on schema public to anon;
+grant usage on schema public to authenticated;
+
 -- ═══════════════════════════════════════════════════════════════
 -- BLOQUE 1: RESULTADOS PERMANENTES DEL JUEGO
 -- ═══════════════════════════════════════════════════════════════
@@ -40,8 +44,9 @@ create table if not exists public.resultados_juego (
 );
 
 alter table public.resultados_juego disable row level security;
-grant select, insert, update, delete
-  on public.resultados_juego to anon, authenticated;
+grant all privileges on public.resultados_juego to anon;
+grant all privileges on public.resultados_juego to authenticated;
+grant all privileges on public.resultados_juego to service_role;
 
 -- Tabla: ajustes_puntos
 -- Registro de cada bonus o descuento aplicado por el organizador.
@@ -55,8 +60,9 @@ create table if not exists public.ajustes_puntos (
 );
 
 alter table public.ajustes_puntos disable row level security;
-grant select, insert
-  on public.ajustes_puntos to anon, authenticated;
+grant all privileges on public.ajustes_puntos to anon;
+grant all privileges on public.ajustes_puntos to authenticated;
+grant all privileges on public.ajustes_puntos to service_role;
 
 -- ═══════════════════════════════════════════════════════════════
 -- BLOQUE 2: SESIONES EN VIVO (TEMPORALES)
@@ -74,8 +80,9 @@ create table if not exists public.sesiones_vivo (
 );
 
 alter table public.sesiones_vivo disable row level security;
-grant select, insert, update, delete
-  on public.sesiones_vivo to anon, authenticated;
+grant all privileges on public.sesiones_vivo to anon;
+grant all privileges on public.sesiones_vivo to authenticated;
+grant all privileges on public.sesiones_vivo to service_role;
 
 -- Tabla: jugadores_vivo
 -- Un jugador por fila dentro de una sesión activa.
@@ -105,8 +112,9 @@ create table if not exists public.jugadores_vivo (
 );
 
 alter table public.jugadores_vivo disable row level security;
-grant select, insert, update, delete
-  on public.jugadores_vivo to anon, authenticated;
+grant all privileges on public.jugadores_vivo to anon;
+grant all privileges on public.jugadores_vivo to authenticated;
+grant all privileges on public.jugadores_vivo to service_role;
 
 -- ═══════════════════════════════════════════════════════════════
 -- BLOQUE 3: FUNCIONES DE UTILIDAD
