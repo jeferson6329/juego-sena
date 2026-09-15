@@ -1,102 +1,47 @@
-import { createContext, useContext, useState, useEffect } from 'react'
-
-// ─── Clave de acceso para organizadores ──────────────────────────────────────
-// Cambia este valor si quieres una clave diferente
-const ORGANIZADOR_CLAVE = 'sena2024'
-
-const STORAGE_KEY_NOMBRE    = 'sena_jugador_nombre'
-const STORAGE_KEY_ROL       = 'sena_jugador_rol'
-const STORAGE_KEY_PUNTOS    = 'sena_jugador_puntos'
+// AuthContext simplificado — sin login, sin roles
+// Solo guarda el nombre del jugador en localStorage para el juego
+import { createContext, useContext, useState } from 'react'
 
 const AuthContext = createContext(null)
+const KEY = 'sena_jugador_nombre'
 
 export function AuthProvider({ children }) {
-  const [nombre, setNombre]       = useState(() => localStorage.getItem(STORAGE_KEY_NOMBRE) || null)
-  const [rol, setRol]             = useState(() => localStorage.getItem(STORAGE_KEY_ROL) || null)
-  const [puntos, setPuntos]       = useState(() => parseInt(localStorage.getItem(STORAGE_KEY_PUNTOS) || '0'))
-  const [error, setError]         = useState(null)
+  const [nombre, setNombre] = useState(() => localStorage.getItem(KEY) || null)
 
-  // Sincronizar puntos al localStorage cuando cambian
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_PUNTOS, String(puntos))
-  }, [puntos])
-
-  // ── Entrar como jugador ───────────────────────────────────────────────────
-  const entrarComoJugador = (nombreIngresado) => {
-    const n = nombreIngresado.trim()
-    if (!n) { setError('Escribe tu nombre para continuar.'); return false }
-    setNombre(n)
-    setRol('jugador')
-    setError(null)
-    localStorage.setItem(STORAGE_KEY_NOMBRE, n)
-    localStorage.setItem(STORAGE_KEY_ROL, 'jugador')
+  const entrar = (n) => {
+    const trimmed = n.trim()
+    if (!trimmed) return false
+    localStorage.setItem(KEY, trimmed)
+    setNombre(trimmed)
     return true
   }
 
-  // ── Entrar como organizador ───────────────────────────────────────────────
-  const entrarComoOrganizador = (clave) => {
-    if (clave !== ORGANIZADOR_CLAVE) {
-      setError('Clave incorrecta.')
-      return false
-    }
-    setNombre('Organizador')
-    setRol('organizador')
-    setError(null)
-    localStorage.setItem(STORAGE_KEY_NOMBRE, 'Organizador')
-    localStorage.setItem(STORAGE_KEY_ROL, 'organizador')
-    return true
-  }
-
-  // ── Salir ─────────────────────────────────────────────────────────────────
   const salir = () => {
+    localStorage.removeItem(KEY)
     setNombre(null)
-    setRol(null)
-    setError(null)
-    localStorage.removeItem(STORAGE_KEY_NOMBRE)
-    localStorage.removeItem(STORAGE_KEY_ROL)
   }
 
-  // ── Sumar puntos localmente ───────────────────────────────────────────────
-  const agregarPuntos = (cantidad) => {
-    setPuntos(prev => prev + cantidad)
-  }
-
-  // ── Alias de compatibilidad con código existente ──────────────────────────
-  // Muchos componentes usan user, profile, isAuthenticated — los mantenemos
-  const user    = nombre ? { id: nombre, email: nombre } : null
-  const profile = nombre ? { full_name: nombre, role: rol, points: puntos } : null
-
+  // Aliases de compatibilidad con código existente
   const value = {
-    // Nuevos
     nombre,
-    rol,
-    puntos,
-    entrarComoJugador,
-    entrarComoOrganizador,
+    entrar,
     salir,
-    agregarPuntos,
-    error,
-    setError,
-    // Alias de compatibilidad
-    user,
-    profile,
-    loading: false,
+    // Aliases
+    user:            nombre ? { id: nombre, email: nombre } : null,
+    profile:         nombre ? { full_name: nombre, role: 'jugador', points: 0 } : null,
+    loading:         false,
     isAuthenticated: !!nombre,
-    isOrganizador: rol === 'organizador',
-    isInstructor:  rol === 'organizador',   // alias legado
-    isJugador:     rol === 'jugador',
-    // Stubs de métodos que ya no hacen nada (compatibilidad)
-    signUp:         async () => ({ data: null, error: null }),
-    signIn:         async () => ({ data: null, error: null }),
-    signOut:        salir,
-    refreshProfile: () => {},
+    isOrganizador:   false,
+    isInstructor:    false,
+    isJugador:       true,
+    refreshProfile:  () => {},
+    signOut:         salir,
+    agregarPuntos:   () => {},
+    puntos:          0,
+    rol:             'jugador',
   }
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

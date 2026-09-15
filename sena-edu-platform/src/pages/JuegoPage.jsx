@@ -310,7 +310,10 @@ export default function JuegoPage() {
     if (resultado.isCorrect && resultado.pts > 0) {
       agregarPuntos(resultado.pts)
     }
-  }, [secuencia, indice, respuestas, agregarPuntos])
+
+    // Registrar progreso en tiempo real para que el organizador lo vea
+    registrarJugador(nombre, nuevasRespuestas, 'en_progreso')
+  }, [secuencia, indice, respuestas, agregarPuntos, nombre])
 
   // Avanzar
   const handleNext = useCallback(() => {

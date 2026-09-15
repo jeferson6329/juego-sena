@@ -2,19 +2,16 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { ProgressProvider } from './context/ProgressContext'
 import AppLayout from './components/layout/AppLayout'
-import RequireAuth from './components/RequireAuth'
 
-// Entrada
-import EntradaPage from './pages/EntradaPage'
+// Juego standalone (sin layout)
+import JuegoStandalonePage from './pages/JuegoStandalonePage'
 
 // Páginas principales
 import HomePage        from './pages/HomePage'
 import PlaygroundPage  from './pages/PlaygroundPage'
 import PerfilPage      from './pages/PerfilPage'
-import LeaderboardPage from './pages/LeaderboardPage'
-import JuegoPage       from './pages/JuegoPage'
 
-// Organizador
+// Organizador (sin guard — acceso por URL directa)
 import RankingPage          from './pages/organizador/RankingPage'
 import EstadisticasPage     from './pages/organizador/EstadisticasPage'
 import GestionJugadoresPage from './pages/organizador/GestionJugadoresPage'
@@ -43,29 +40,24 @@ export default function App() {
     <AuthProvider>
       <ProgressProvider>
         <Routes>
-          {/* ── Sin layout ── */}
-          <Route path="/entrada" element={<EntradaPage />} />
+          {/* ── Juego público — standalone sin layout ── */}
+          <Route path="/juego" element={<JuegoStandalonePage />} />
 
-          {/* Compatibilidad con rutas viejas */}
-          <Route path="/login"    element={<Navigate to="/entrada" replace />} />
-          <Route path="/register" element={<Navigate to="/entrada" replace />} />
+          {/* Aliases de rutas viejas */}
+          <Route path="/entrada"  element={<Navigate to="/juego" replace />} />
+          <Route path="/login"    element={<Navigate to="/" replace />} />
+          <Route path="/register" element={<Navigate to="/" replace />} />
 
-          {/* ── Con layout + guard de nombre ── */}
-          <Route element={
-            <RequireAuth>
-              <AppLayout />
-            </RequireAuth>
-          }>
-            <Route index element={<HomePage />} />
-            <Route path="/playground"  element={<PlaygroundPage />} />
-            <Route path="/perfil"      element={<PerfilPage />} />
-            <Route path="/leaderboard" element={<LeaderboardPage />} />
-            <Route path="/juego"       element={<JuegoPage />} />
-
-            {/* Organizador */}
+          {/* ── Organizador — acceso libre por URL ── */}
+          <Route element={<AppLayout />}>
             <Route path="/organizador/ranking"      element={<RankingPage />} />
             <Route path="/organizador/estadisticas" element={<EstadisticasPage />} />
             <Route path="/organizador/jugadores"    element={<GestionJugadoresPage />} />
+
+            {/* ── Plataforma educativa ── */}
+            <Route index element={<HomePage />} />
+            <Route path="/playground"  element={<PlaygroundPage />} />
+            <Route path="/perfil"      element={<PerfilPage />} />
 
             {/* Guía 1 */}
             <Route path="/guia1"            element={<Guia1IndexPage />} />

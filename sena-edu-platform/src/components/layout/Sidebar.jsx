@@ -1,14 +1,14 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
 import { useProgress } from '../../context/ProgressContext'
 import {
-  Home, Server, Layers, Trophy, User, Zap, Gamepad2,
-  ChevronRight, CheckCircle2, Circle, Users, BarChart2, Crown,
+  Home, Server, Layers, Zap, Gamepad2,
+  ChevronRight, CheckCircle2, Circle,
+  Crown, BarChart2, Users,
 } from 'lucide-react'
 
-const NAV_JUGADOR = [
-  { to: '/',          icon: Home,     label: 'Inicio', end: true },
-  { to: '/juego',     icon: Gamepad2, label: '🎮 Juego educativo', highlight: true },
+const NAV_PLATAFORMA = [
+  { to: '/',           icon: Home,     label: 'Inicio', end: true },
+  { to: '/juego',      icon: Gamepad2, label: '🎮 Juego (enlace público)', highlight: true },
   {
     label: 'Guía 1 – Back-end', icon: Server, to: '/guia1',
     children: [
@@ -32,34 +32,29 @@ const NAV_JUGADOR = [
       { to: '/guia3/quiz',           label: '🧠 Cuestionario Guía 3',  sid: null },
     ],
   },
-  { to: '/playground', icon: Zap,  label: 'Editor de código' },
-  { to: '/perfil',     icon: User, label: 'Mi perfil' },
+  { to: '/playground', icon: Zap, label: 'Editor de código' },
 ]
 
 const NAV_ORGANIZADOR = [
-  { to: '/',                         icon: Home,      label: 'Inicio', end: true },
-  { to: '/organizador/ranking',      icon: Crown,     label: 'Ranking',           highlight: true },
+  { to: '/organizador/ranking',      icon: Crown,     label: 'Ranking' },
   { to: '/organizador/estadisticas', icon: BarChart2, label: 'Estadísticas' },
   { to: '/organizador/jugadores',    icon: Users,     label: 'Gestión jugadores' },
-  { to: '/playground',               icon: Zap,       label: 'Editor de código' },
 ]
 
 function SectionLink({ to, label, sid, guideId, onClick }) {
   const { isSectionComplete } = useProgress()
   const done = sid ? isSectionComplete(guideId, sid) : false
   return (
-    <NavLink
-      to={to}
-      onClick={onClick}
+    <NavLink to={to} onClick={onClick}
       className={({ isActive }) =>
-        `flex items-center gap-2 pl-8 pr-3 py-1.5 rounded-lg text-xs transition-all duration-150 ${
+        `flex items-center gap-2 pl-8 pr-3 py-1.5 rounded-lg text-xs transition-all ${
           isActive ? 'bg-sena-green/15 text-sena-green font-medium' : 'text-gray-400 hover:text-white hover:bg-gray-800'
         }`
       }
     >
       {done
         ? <CheckCircle2 size={12} className="text-sena-green shrink-0" />
-        : <Circle size={12} className="text-gray-700 shrink-0" />
+        : <Circle       size={12} className="text-gray-700 shrink-0" />
       }
       {label}
     </NavLink>
@@ -68,11 +63,12 @@ function SectionLink({ to, label, sid, guideId, onClick }) {
 
 export default function Sidebar({ open, onClose }) {
   const location = useLocation()
-  const { isOrganizador, nombre, puntos } = useAuth()
   const { getGuideProgress } = useProgress()
-  const g1 = getGuideProgress('guia1')
-  const g3 = getGuideProgress('guia3')
-  const nav = isOrganizador ? NAV_ORGANIZADOR : NAV_JUGADOR
+  const esOrganizador = location.pathname.startsWith('/organizador')
+
+  const g1   = getGuideProgress('guia1')
+  const g3   = getGuideProgress('guia3')
+  const nav  = esOrganizador ? NAV_ORGANIZADOR : NAV_PLATAFORMA
 
   return (
     <>
@@ -82,38 +78,21 @@ export default function Sidebar({ open, onClose }) {
         overflow-y-auto transition-transform duration-300
         ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
       >
-        {/* Info del usuario */}
-        <div className="p-3 border-b border-gray-800">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-sena-green/20 border border-sena-green/30 flex items-center justify-center text-sena-green font-bold text-sm uppercase shrink-0">
-              {nombre?.[0] || '?'}
-            </div>
-            <div className="min-w-0">
-              <p className="text-white text-sm font-medium truncate">{nombre}</p>
-              {isOrganizador
-                ? <p className="text-yellow-400 text-[11px] flex items-center gap-1"><Crown size={9} /> Organizador</p>
-                : <p className="text-yellow-400 text-[11px]">⭐ {puntos} pts</p>
-              }
-            </div>
-          </div>
-        </div>
-
-        <nav className="p-3 space-y-1">
-          {isOrganizador && (
-            <div className="mb-2 px-3 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+        {esOrganizador && (
+          <div className="p-3 border-b border-gray-800">
+            <div className="px-2 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
               <p className="text-xs text-yellow-400 font-semibold flex items-center gap-1.5">
                 <Crown size={11} /> Panel Organizador
               </p>
             </div>
-          )}
+          </div>
+        )}
 
+        <nav className="p-3 space-y-1">
           {nav.map((item) => {
             if (!item.children) {
               return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={!!item.end}
+                <NavLink key={item.to} to={item.to} end={!!item.end} onClick={onClose}
                   className={({ isActive }) =>
                     item.highlight
                       ? isActive
@@ -121,7 +100,6 @@ export default function Sidebar({ open, onClose }) {
                         : 'nav-link text-sena-green border border-sena-green/20 hover:bg-sena-green/10'
                       : isActive ? 'nav-link-active' : 'nav-link-inactive'
                   }
-                  onClick={onClose}
                 >
                   <item.icon size={16} />
                   {item.label}
@@ -129,16 +107,14 @@ export default function Sidebar({ open, onClose }) {
               )
             }
 
-            const guideId = item.to.replace('/', '')
-            const prog = guideId === 'guia1' ? g1 : g3
+            const guideId   = item.to.replace('/', '')
+            const prog      = guideId === 'guia1' ? g1 : g3
             const isExpanded = location.pathname.startsWith(item.to)
 
             return (
               <div key={item.label}>
-                <NavLink
-                  to={item.to}
+                <NavLink to={item.to} onClick={onClose}
                   className={({ isActive }) => `${isActive ? 'nav-link-active' : 'nav-link-inactive'} justify-between`}
-                  onClick={onClose}
                 >
                   <span className="flex items-center gap-2">
                     <item.icon size={16} />
