@@ -20,7 +20,7 @@ export default function Navbar({ onMenuToggle, menuOpen }) {
       {/* Logo */}
       <Link to="/" className="flex items-center gap-2 font-bold text-white shrink-0">
         <span className="w-7 h-7 bg-sena-green rounded-lg flex items-center justify-center text-sm font-black">S</span>
-        <span className="hidden sm:block text-sm">SENA<span className="text-sena-green">·EDU</span></span>
+        <span className="hidden sm:block text-sm">SENA<span className="text-sena-green"> Jeferson lugo 3177444</span></span>
       </Link>
 
       <div className="flex-1" />
