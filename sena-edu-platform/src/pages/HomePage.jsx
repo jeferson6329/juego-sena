@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useProgress } from '../context/ProgressContext'
 import { crearSesion, cerrarSesion, verificarSesion } from '../lib/supabaseVivo'
 import {
   Server, Layers, Zap, ArrowRight, BookOpen,
-  Star, CheckCircle2, Target, Gamepad2,
-  BarChart2, Users, Crown, Radio, Copy,
+  Gamepad2, BarChart2, Users, Crown, Radio, Copy,
   QrCode, X, ExternalLink,
 } from 'lucide-react'
 
@@ -13,9 +11,7 @@ import {
 const KEY_SESION_ADMIN = 'sena_admin_sesion'
 
 // ─── Tarjeta de guía ─────────────────────────────────────────────────────────
-function GuideCard({ to, icon: Icon, color, title, subtitle, guideId }) {
-  const { getGuideProgress } = useProgress()
-  const prog = getGuideProgress(guideId)
+function GuideCard({ to, icon: Icon, color, title, subtitle }) {
   return (
     <Link to={to} className="card-hover group block">
       <div className="flex items-start justify-between mb-4">
@@ -25,16 +21,7 @@ function GuideCard({ to, icon: Icon, color, title, subtitle, guideId }) {
         <ArrowRight size={16} className="text-gray-600 group-hover:text-sena-green group-hover:translate-x-1 transition-all" />
       </div>
       <h3 className="font-bold text-white mb-1">{title}</h3>
-      <p className="text-gray-400 text-sm mb-4">{subtitle}</p>
-      <div>
-        <div className="flex justify-between text-xs text-gray-500 mb-1">
-          <span>{prog.done}/{prog.total} secciones</span>
-          <span>{prog.pct}%</span>
-        </div>
-        <div className="progress-bar">
-          <div className="progress-fill" style={{ width: `${prog.pct}%` }} />
-        </div>
-      </div>
+      <p className="text-gray-400 text-sm">{subtitle}</p>
     </Link>
   )
 }
@@ -125,9 +112,6 @@ function PanelVivoAdmin({ sesion, enlace, onCerrar }) {
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function HomePage() {
   const navigate = useNavigate()
-  const { getGuideProgress, completed } = useProgress()
-  const g1 = getGuideProgress('guia1')
-  const g3 = getGuideProgress('guia3')
 
   const [sesionActiva, setSesionActiva] = useState(() => localStorage.getItem(KEY_SESION_ADMIN))
   const [creando, setCreando]           = useState(false)
@@ -221,26 +205,6 @@ export default function HomePage() {
         />
       )}
 
-      {/* Stats rápidas */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {[
-          { icon: CheckCircle2, value: completed.length,     label: 'Secciones hechas',  color: 'bg-sena-green/80' },
-          { icon: Target,       value: `${g1.pct}%`,         label: 'Progreso Guía 1',   color: 'bg-blue-500/80' },
-          { icon: Target,       value: `${g3.pct}%`,         label: 'Progreso Guía 3',   color: 'bg-purple-500/80' },
-          { icon: Star,         value: g1.done + g3.done,    label: 'Total completadas', color: 'bg-yellow-500/80' },
-        ].map((s, i) => (
-          <div key={i} className="card flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${s.color}`}>
-              <s.icon size={16} className="text-white" />
-            </div>
-            <div>
-              <p className="text-lg font-bold text-white">{s.value}</p>
-              <p className="text-xs text-gray-400">{s.label}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* Guías */}
       <div>
         <h2 className="section-title">Guías de aprendizaje</h2>
@@ -248,12 +212,10 @@ export default function HomePage() {
         <div className="grid sm:grid-cols-2 gap-4">
           <GuideCard to="/guia1" icon={Server} color="bg-blue-600"
             title="Guía 1 – Fundamentos del Back-end"
-            subtitle="HTTP, servidores, lenguajes web, algoritmos y lógica de programación."
-            guideId="guia1" />
+            subtitle="HTTP, servidores, lenguajes web, algoritmos y lógica de programación." />
           <GuideCard to="/guia3" icon={Layers} color="bg-purple-600"
             title="Guía 3 – Arquitectura y Patrones"
-            subtitle="MVC, capas, microservicios, principios SOLID y patrones de diseño."
-            guideId="guia3" />
+            subtitle="MVC, capas, microservicios, principios SOLID y patrones de diseño." />
         </div>
       </div>
 

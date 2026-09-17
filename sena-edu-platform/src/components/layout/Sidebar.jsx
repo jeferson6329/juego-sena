@@ -1,5 +1,4 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { useProgress } from '../../context/ProgressContext'
 import {
   Home, Server, Layers, Zap,
   ChevronRight, CheckCircle2, Circle,
@@ -60,11 +59,7 @@ function SectionLink({ to, label, sid, guideId, onClick }) {
 
 export default function Sidebar({ open, onClose }) {
   const location = useLocation()
-  const { getGuideProgress } = useProgress()
   const esOrganizador = location.pathname.startsWith('/organizador')
-
-  const g1   = getGuideProgress('guia1')
-  const g3   = getGuideProgress('guia3')
   const nav  = esOrganizador ? NAV_ORGANIZADOR : NAV_PLATAFORMA
 
   return (
@@ -104,8 +99,7 @@ export default function Sidebar({ open, onClose }) {
               )
             }
 
-            const guideId   = item.to.replace('/', '')
-            const prog      = guideId === 'guia1' ? g1 : g3
+            const guideId    = item.to.replace('/', '')
             const isExpanded = location.pathname.startsWith(item.to)
 
             return (
@@ -117,16 +111,8 @@ export default function Sidebar({ open, onClose }) {
                     <item.icon size={16} />
                     <span className="text-xs font-semibold">{item.label}</span>
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-gray-500">{prog.done}/{prog.total}</span>
-                    <ChevronRight size={13} className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                  </span>
+                  <ChevronRight size={13} className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                 </NavLink>
-                <div className="px-3 pb-1">
-                  <div className="progress-bar h-1">
-                    <div className="progress-fill" style={{ width: `${prog.pct}%` }} />
-                  </div>
-                </div>
                 {isExpanded && (
                   <div className="space-y-0.5 mt-0.5">
                     {item.children.map(child => (
