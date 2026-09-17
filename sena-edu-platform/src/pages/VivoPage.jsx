@@ -7,11 +7,156 @@ import {
   obtenerJugadoresVivos, suscribirJugadores, desuscribir,
   aplicarAjusteVivo, cerrarSesion,
 } from '../lib/supabaseVivo'
+import { PREGUNTAS, RETOS_PSEUDOCODIGO } from '../data/gameData'
 import {
-  Radio, RefreshCw, Users, Trophy, CheckCircle2, XCircle,
-  Plus, Minus, ChevronDown, ChevronUp, X, Copy, QrCode,
-  Home, Star,
+  Radio, RefreshCw, Users, CheckCircle2, XCircle,
+  Plus, Minus, ChevronDown, ChevronUp, X, Copy,
+  Home, Star, AlertTriangle, TrendingDown, TrendingUp, BookOpen,
 } from 'lucide-react'
+
+// ─── Mapa id→item para enriquecer respuestas con tema ────────────────────────
+const ITEM_MAP = Object.fromEntries(
+  [...PREGUNTAS, ...RETOS_PSEUDOCODIGO].map(i => [i.id, i])
+)
+
+// ─── Calcular refuerzo por tema a partir de respuestas ────────────────────────
+function calcularRefuerzoPorTema(respuestas) {
+  const porTema = {}
+  Object.entries(respuestas || {}).forEach(([itemId, resp]) => {
+    const item = ITEM_MAP[itemId]
+    if (!item) return
+    const t = item.tema || 'Sin tema'
+    if (!porTema[t]) porTema[t] = { total: 0, aciertos: 0, errores: 0 }
+    porTema[t].total++
+    if (resp.isCorrect) porTema[t].aciertos++
+    else porTema[t].errores++
+  })
+  return Object.entries(porTema).map(([tema, st]) => ({
+    tema,
+    ...st,
+    pctError: st.total > 0 ? Math.round((st.errores / st.total) * 100) : 0,
+  })).sort((a, b) => b.pctError - a.pctError)
+}
+
+// ─── Componente: refuerzo individual ─────────────────────────────────────────
+function RefuerzoIndividual({ respuestas, nombre }) {
+  const temas = calcularRefuerzoPorTema(respuestas)
+  const criticos = temas.filter(t => t.pctError >= 40)
+  if (criticos.length === 0) return (
+    <div className="p-2 bg-sena-green/5 border border-sena-green/20 rounded-lg">
+      <p className="text-xs text-sena-green flex items-center gap-1.5">
+        <TrendingUp size={11} /> {nombre} muestra buen dominio en todos los temas.
+      </p>
+    </div>
+  )
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[10px] text-gray-500 uppercase font-semibold flex items-center gap-1">
+        <AlertTriangle size={10} /> Temas que necesitan refuerzo
+      </p>
+      {criticos.map(t => (
+        <div key={t.tema} className={`p-2 rounded-lg border text-xs flex items-center justify-between ${t.pctError >= 60 ? 'border-red-500/30 bg-red-500/5' : 'border-yellow-500/30 bg-yellow-500/5'}`}>
+          <span className="text-gray-300 truncate">{t.tema}</span>
+          <span className={`font-bold ml-2 shrink-0 ${t.pctError >= 60 ? 'text-red-400' : 'text-yellow-400'}`}>
+            {t.pctError}% errores
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── Componente: refuerzo general (todos los jugadores terminados) ────────────
+function RefuerzoGeneral({ jugadores }) {
+  const terminados = jugadores.filter(j => j.estado === 'terminado' && j.respuestas)
+  if (terminados.length === 0) return null
+
+  // Agregar por tema
+  const porTema = {}
+  terminados.forEach(j => {
+    Object.entries(j.respuestas || {}).forEach(([itemId, resp]) => {
+      const item = ITEM_MAP[itemId]
+      if (!item) return
+      const t = item.tema || 'Sin tema'
+      if (!porTema[t]) porTema[t] = { total: 0, aciertos: 0, errores: 0 }
+      porTema[t].total++
+      if (resp.isCorrect) porTema[t].aciertos++
+      else porTema[t].errores++
+    })
+  })
+
+  const temasStats = Object.entries(porTema).map(([tema, st]) => ({
+    tema, ...st,
+    pctError:   st.total > 0 ? Math.round((st.errores  / st.total) * 100) : 0,
+    pctAcierto: st.total > 0 ? Math.round((st.aciertos / st.total) * 100) : 0,
+  })).sort((a, b) => b.pctError - a.pctError)
+
+  const criticos  = temasStats.filter(t => t.pctError >= 60)
+  const practica  = temasStats.filter(t => t.pctError >= 40 && t.pctError < 60)
+  const dominio   = temasStats.filter(t => t.pctError < 40)
+
+  return (
+    <div className="card border-orange-500/20 space-y-4">
+      <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+        <BookOpen size={15} className="text-orange-400" />
+        Refuerzo académico — {terminados.length} jugador{terminados.length > 1 ? 'es' : ''} terminado{terminados.length > 1 ? 's' : ''}
+      </h2>
+
+      {/* Rendimiento por tema */}
+      <div className="space-y-2.5">
+        {temasStats.map(t => {
+          const color = t.pctError >= 60 ? 'bg-red-500' : t.pctError >= 40 ? 'bg-yellow-500' : 'bg-sena-green'
+          const label = t.pctError >= 60 ? 'Necesita refuerzo' : t.pctError >= 40 ? 'Requiere práctica' : 'Buen dominio'
+          const textColor = t.pctError >= 60 ? 'text-red-400' : t.pctError >= 40 ? 'text-yellow-400' : 'text-sena-green'
+          return (
+            <div key={t.tema}>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-gray-300 truncate max-w-[55%]">{t.tema}</span>
+                <span className={`font-semibold ${textColor}`}>{label} — {t.pctError}% errores</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-gray-800">
+                <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${t.pctError}%` }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Recomendaciones */}
+      {criticos.length > 0 && (
+        <div className="p-3 bg-red-500/5 border border-red-500/20 rounded-lg space-y-1">
+          <p className="text-xs text-red-400 font-semibold flex items-center gap-1.5">
+            <AlertTriangle size={11} /> Requiere atención inmediata
+          </p>
+          {criticos.map(t => (
+            <p key={t.tema} className="text-xs text-gray-400">
+              • <strong className="text-gray-300">{t.tema}</strong>: el {t.pctError}% del grupo tuvo errores — se recomienda reforzar este tema antes de continuar.
+            </p>
+          ))}
+        </div>
+      )}
+      {practica.length > 0 && (
+        <div className="p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-lg space-y-1">
+          <p className="text-xs text-yellow-400 font-semibold flex items-center gap-1.5">
+            <TrendingDown size={11} /> Requiere práctica adicional
+          </p>
+          {practica.map(t => (
+            <p key={t.tema} className="text-xs text-gray-400">
+              • <strong className="text-gray-300">{t.tema}</strong>: {t.pctError}% de errores — se sugiere reforzar con ejercicios adicionales.
+            </p>
+          ))}
+        </div>
+      )}
+      {criticos.length === 0 && practica.length === 0 && (
+        <div className="p-3 bg-sena-green/5 border border-sena-green/20 rounded-lg">
+          <p className="text-xs text-sena-green flex items-center gap-1.5">
+            <TrendingUp size={11} /> El grupo muestra buen dominio en todos los temas evaluados.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
 
 const KEY_SESION = 'sena_admin_sesion'
 const OPCIONES_BONUS     = [5, 10, 20, 50]
@@ -179,6 +324,11 @@ function TarjetaJugador({ j, codigoSesion, onAjuste }) {
               ))}
             </div>
           )}
+
+          {/* Refuerzo individual — solo si terminó */}
+          {j.estado === 'terminado' && j.respuestas && (
+            <RefuerzoIndividual respuestas={j.respuestas} nombre={j.nombre} />
+          )}
         </div>
       )}
     </div>
@@ -335,6 +485,11 @@ export default function VivoPage() {
             />
           ))}
         </div>
+      )}
+
+      {/* Refuerzo general — aparece cuando al menos un jugador terminó */}
+      {jugadores.some(j => j.estado === 'terminado') && (
+        <RefuerzoGeneral jugadores={jugadores} />
       )}
 
       {/* Modal */}

@@ -12,8 +12,8 @@ import {
 } from '../data/gameData'
 import GameEngine from '../components/game/GameEngine'
 import {
-  Gamepad2, RotateCcw, Star, Target,
-  CheckCircle2, XCircle, BarChart2, ChevronRight, Radio,
+  Gamepad2, RotateCcw, Star,
+  CheckCircle2, XCircle, Radio, ChevronRight,
 } from 'lucide-react'
 
 const KEY_NOMBRE    = 'sena_jugador_nombre'
@@ -81,108 +81,47 @@ function PantallaNombre({ codigoSesion, onEntrar, error }) {
   )
 }
 
-// ─── Pantalla: resultados ─────────────────────────────────────────────────────
+// ─── Pantalla: resultados (simplificada para el jugador) ─────────────────────
 function PantallaResultados({ nombre, respuestas, secuencia, onReiniciar }) {
   const total    = secuencia.length
   const aciertos = Object.values(respuestas).filter(r => r.isCorrect).length
   const pts      = Object.values(respuestas).reduce((s, r) => s + (r.pts || 0), 0)
   const pct      = total > 0 ? Math.round((aciertos / total) * 100) : 0
   const emoji    = pct >= 80 ? '🏆' : pct >= 60 ? '👍' : pct >= 40 ? '📚' : '💪'
-  const msg      = pct >= 80 ? '¡Excelente dominio!'
-    : pct >= 60 ? 'Buen desempeño. Repasa los temas que fallaste.'
-    : pct >= 40 ? 'Hay margen de mejora.'
-    : 'Estudia el material y vuelve a intentarlo.'
-
-  const porTema = {}
-  secuencia.forEach(item => {
-    const t = item.tema || 'Sin tema'
-    if (!porTema[t]) porTema[t] = { total: 0, aciertos: 0 }
-    porTema[t].total++
-    if (respuestas[item.id]?.isCorrect) porTema[t].aciertos++
-  })
+  const msg      = pct >= 80 ? '¡Excelente dominio! Muy buen trabajo.'
+    : pct >= 60 ? 'Buen desempeño. Sigue practicando.'
+    : pct >= 40 ? 'Vas por buen camino. ¡Sigue adelante!'
+    : '¡Gracias por participar! Sigue estudiando.'
 
   return (
-    <div className="min-h-screen bg-gray-950 p-4">
-      <div className="max-w-2xl mx-auto space-y-5 py-8 animate-fade-in">
-        <div className="card text-center py-8 border-gray-700">
-          <div className="text-6xl mb-3 animate-bounce-light">{emoji}</div>
-          <h1 className="text-2xl font-black text-white mb-1">¡Terminaste, {nombre}!</h1>
-          <p className="text-gray-400 text-sm">{msg}</p>
-        </div>
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+      <div className="max-w-sm w-full space-y-5 animate-fade-in text-center">
+        <div className="card border-gray-700 py-10">
+          <div className="text-7xl mb-4 animate-bounce-light">{emoji}</div>
+          <h1 className="text-2xl font-black text-white mb-2">¡Terminaste, {nombre}!</h1>
+          <p className="text-gray-400 text-sm mb-6">{msg}</p>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { icon: <Target size={18} />,    label: 'Aciertos',   val: `${aciertos}/${total}`, color: 'text-sena-green' },
-            { icon: <XCircle size={18} />,   label: 'Errores',    val: total - aciertos,       color: 'text-red-400' },
-            { icon: <Star size={18} />,      label: 'Puntos',     val: pts,                    color: 'text-yellow-400' },
-            { icon: <BarChart2 size={18} />, label: 'Porcentaje', val: `${pct}%`,
-              color: pct >= 60 ? 'text-sena-green' : 'text-red-400' },
-          ].map(s => (
-            <div key={s.label} className="card text-center">
-              <div className={`flex justify-center mb-1 ${s.color}`}>{s.icon}</div>
-              <p className={`text-2xl font-black ${s.color}`}>{s.val}</p>
-              <p className="text-xs text-gray-500">{s.label}</p>
+          {/* Solo puntos y aciertos — sin estadísticas detalladas */}
+          <div className="flex justify-center gap-6">
+            <div>
+              <p className="text-3xl font-black text-yellow-400">{pts}</p>
+              <p className="text-xs text-gray-500">puntos</p>
             </div>
-          ))}
-        </div>
-
-        <div className="card">
-          <div className="flex justify-between text-xs text-gray-500 mb-2">
-            <span>Porcentaje de aciertos</span>
-            <span className={pct >= 60 ? 'text-sena-green' : 'text-red-400'}>{pct}%</span>
-          </div>
-          <div className="progress-bar h-3">
-            <div className={`progress-fill ${pct >= 80 ? 'bg-sena-green' : pct >= 60 ? 'bg-yellow-400' : 'bg-red-400'}`}
-              style={{ width: `${pct}%` }} />
-          </div>
-          <p className="text-xs text-gray-600 mt-1.5">{pts} / {TOTAL_PUNTOS_POSIBLES} puntos posibles</p>
-        </div>
-
-        <div className="card">
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-2">
-            <BarChart2 size={14} /> Por tema
-          </h2>
-          <div className="space-y-2">
-            {Object.entries(porTema).map(([tema, st]) => {
-              const p = Math.round((st.aciertos / st.total) * 100)
-              return (
-                <div key={tema}>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-gray-300 truncate max-w-[60%]">{tema}</span>
-                    <span className={`font-semibold ${p >= 60 ? 'text-sena-green' : p >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
-                      {st.aciertos}/{st.total}
-                    </span>
-                  </div>
-                  <div className="progress-bar h-1.5">
-                    <div className={`progress-fill ${p >= 60 ? 'bg-sena-green' : p >= 40 ? 'bg-yellow-400' : 'bg-red-400'}`}
-                      style={{ width: `${p}%` }} />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        <div className="card">
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">Revisión</h2>
-          <div className="space-y-1.5 max-h-56 overflow-y-auto">
-            {secuencia.map(item => {
-              const ok = respuestas[item.id]?.isCorrect
-              return (
-                <div key={item.id}
-                  className={`flex items-start gap-2 p-2 rounded-lg border text-xs ${ok ? 'border-sena-green/20 bg-sena-green/5' : 'border-red-500/20 bg-red-500/5'}`}>
-                  {ok ? <CheckCircle2 size={11} className="text-sena-green shrink-0 mt-0.5" />
-                      : <XCircle     size={11} className="text-red-400 shrink-0 mt-0.5" />}
-                  <p className="text-gray-300 truncate">{item.enunciado || item.titulo}</p>
-                </div>
-              )
-            })}
+            <div className="w-px bg-gray-800" />
+            <div>
+              <p className="text-3xl font-black text-sena-green">{aciertos}/{total}</p>
+              <p className="text-xs text-gray-500">aciertos</p>
+            </div>
           </div>
         </div>
 
         <button onClick={onReiniciar} className="btn-primary w-full justify-center py-3">
           <RotateCcw size={15} /> Jugar de nuevo
         </button>
+
+        <p className="text-xs text-gray-700">
+          Tu resultado ha sido registrado.
+        </p>
       </div>
     </div>
   )

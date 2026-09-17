@@ -1,14 +1,13 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useProgress } from '../../context/ProgressContext'
 import {
-  Home, Server, Layers, Zap, Gamepad2,
+  Home, Server, Layers, Zap,
   ChevronRight, CheckCircle2, Circle,
   Crown, BarChart2, Users,
 } from 'lucide-react'
 
 const NAV_PLATAFORMA = [
   { to: '/',           icon: Home,     label: 'Inicio', end: true },
-  { to: '/juego',      icon: Gamepad2, label: '🎮 Juego (enlace público)', highlight: true },
   {
     label: 'Guía 1 – Back-end', icon: Server, to: '/guia1',
     children: [
