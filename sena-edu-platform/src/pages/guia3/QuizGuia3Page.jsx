@@ -14,7 +14,7 @@ export default function QuizGuia3Page() {
 
       <InfoBox variant="tip" title="Instrucciones">
         Selecciona la respuesta correcta en cada pregunta. Verás la explicación al responder.
-        Inicia sesión para guardar tu puntaje en la tabla de posiciones.
+        Puedes reintentar el cuestionario las veces que quieras.
       </InfoBox>
 
       <QuizEngine guideId="guia3" backTo="/guia3" />

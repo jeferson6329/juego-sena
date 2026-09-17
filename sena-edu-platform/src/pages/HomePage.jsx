@@ -270,13 +270,13 @@ export default function HomePage() {
               <p className="text-gray-400 text-sm">Editor con vista previa en vivo. HTML, CSS y JavaScript.</p>
             </div>
           </Link>
-          <Link to="/organizador/ranking" className="card-hover group flex flex-col gap-3">
+          <Link to="/vivo" className="card-hover group flex flex-col gap-3">
             <div className="w-9 h-9 rounded-xl bg-yellow-500/20 flex items-center justify-center">
               <Crown size={18} className="text-yellow-400" />
             </div>
             <div>
-              <h3 className="font-semibold text-white mb-1">Resultados</h3>
-              <p className="text-gray-400 text-sm">Ranking, estadísticas y gestión de jugadores.</p>
+              <h3 className="font-semibold text-white mb-1">Panel en vivo</h3>
+              <p className="text-gray-400 text-sm">Ver jugadores activos, estadísticas y refuerzo académico.</p>
             </div>
           </Link>
           {sesionActiva ? (
@@ -308,7 +308,7 @@ export default function HomePage() {
         <h2 className="font-bold text-white mb-2">Sobre este programa</h2>
         <p className="text-gray-400 text-sm leading-relaxed">
           Competencia <strong className="text-white">Construcción del Software</strong> del programa{' '}
-          <strong className="text-white">Análisis y Desarrollo de Software</strong> (código 228118) del SENA.
+          <strong className="text-white">Análisis y Desarrollo de Software</strong> del SENA.
         </p>
       </div>
     </div>

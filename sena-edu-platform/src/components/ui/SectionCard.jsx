@@ -2,7 +2,7 @@ import { CheckCircle2 } from 'lucide-react'
 import { useProgress } from '../../context/ProgressContext'
 import { useAuth } from '../../context/AuthContext'
 
-export default function SectionCard({ guideId, sectionId, title, points = 15, children }) {
+export default function SectionCard({ guideId, sectionId, title, children }) {
   const { isSectionComplete, markComplete } = useProgress()
   const { nombre } = useAuth()
   const done = isSectionComplete(guideId, sectionId)
@@ -17,10 +17,10 @@ export default function SectionCard({ guideId, sectionId, title, points = 15, ch
 
         {nombre && !done && (
           <button
-            onClick={() => markComplete(guideId, sectionId, points)}
+            onClick={() => markComplete(guideId, sectionId)}
             className="shrink-0 btn-secondary text-xs py-1.5 px-3"
           >
-            ✓ Marcar completada <span className="badge-green ml-1">+{points} pts</span>
+            ✓ Marcar completada
           </button>
         )}
         {done && (

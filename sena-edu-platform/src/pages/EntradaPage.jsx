@@ -158,7 +158,7 @@ export default function EntradaPage() {
         )}
 
         <p className="text-center text-[11px] text-gray-700">
-          SENA · Análisis y Desarrollo de Software · Programa 228118
+          SENA · Análisis y Desarrollo de Software
         </p>
       </div>
     </div>

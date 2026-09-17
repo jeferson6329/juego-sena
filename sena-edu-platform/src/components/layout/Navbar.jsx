@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { BookOpen, Zap, Menu, X, BarChart2, Users, Crown, Gamepad2 } from 'lucide-react'
+import { BookOpen, Zap, Menu, X, BarChart2, Users, Crown, Gamepad2, Radio } from 'lucide-react'
 
 export default function Navbar({ onMenuToggle, menuOpen }) {
   const location = useLocation()
@@ -29,7 +29,7 @@ export default function Navbar({ onMenuToggle, menuOpen }) {
       <nav className="hidden md:flex items-center gap-1">
         {esOrganizador ? (
           <>
-            <Link to="/organizador/ranking"      className="btn-ghost text-sm py-1.5"><Crown size={14} /> Ranking</Link>
+            <Link to="/vivo"                     className="btn-ghost text-sm py-1.5"><Radio size={14} /> En vivo</Link>
             <Link to="/organizador/estadisticas" className="btn-ghost text-sm py-1.5"><BarChart2 size={14} /> Estadísticas</Link>
             <Link to="/organizador/jugadores"    className="btn-ghost text-sm py-1.5"><Users size={14} /> Jugadores</Link>
             <Link to="/" className="btn-ghost text-sm py-1.5"><BookOpen size={14} /> Plataforma</Link>

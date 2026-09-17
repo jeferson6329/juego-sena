@@ -1,14 +1,13 @@
 import { Link } from 'react-router-dom'
 import { useProgress } from '../../context/ProgressContext'
-import { CheckCircle2, Circle, ArrowRight, Clock, Star } from 'lucide-react'
+import { CheckCircle2, Circle, ArrowRight, Clock } from 'lucide-react'
 
 const SECTIONS = [
-  { to: '/guia1/intro',      sid: 'intro-backend',       title: 'Introducción al Back-end',    time: '10 min', pts: 15 },
-  { to: '/guia1/http',       sid: 'http-protocolo',       title: 'HTTP y protocolos web',       time: '15 min', pts: 15 },
-  { to: '/guia1/servidores', sid: 'servidores',           title: 'Servidores de aplicación',    time: '10 min', pts: 15 },
-  { to: '/guia1/lenguajes',  sid: 'lenguajes-web',        title: 'Lenguajes de programación web',time: '20 min', pts: 15 },
-  { to: '/guia1/algoritmos', sid: 'algoritmos-intro',     title: 'Algoritmos fundamentales',    time: '25 min', pts: 20 },
-  { to: '/guia1/quiz',       sid: null,                   title: '🧠 Cuestionario Guía 1',     time: '15 min', pts: 50 },
+  { to: '/guia1/intro',      sid: 'intro-backend',   title: 'Introducción al Back-end',     time: '10 min' },
+  { to: '/guia1/http',       sid: 'http-protocolo',  title: 'HTTP y protocolos web',        time: '15 min' },
+  { to: '/guia1/servidores', sid: 'servidores',      title: 'Servidores de aplicación',     time: '10 min' },
+  { to: '/guia1/lenguajes',  sid: 'lenguajes-web',   title: 'Lenguajes de programación web',time: '20 min' },
+  { to: '/guia1/algoritmos', sid: 'algoritmos-intro',title: 'Algoritmos fundamentales',     time: '25 min' },
 ]
 
 export default function Guia1IndexPage() {
@@ -41,14 +40,10 @@ export default function Guia1IndexPage() {
       </div>
 
       {/* Info */}
-      <div className="grid sm:grid-cols-3 gap-3">
+      <div className="grid sm:grid-cols-2 gap-3">
         <div className="card flex items-center gap-3">
           <Clock size={18} className="text-blue-400" />
           <div><p className="text-white font-semibold text-sm">60 horas</p><p className="text-xs text-gray-500">Duración total</p></div>
-        </div>
-        <div className="card flex items-center gap-3">
-          <Star size={18} className="text-yellow-400" />
-          <div><p className="text-white font-semibold text-sm">130 puntos</p><p className="text-xs text-gray-500">Puntos disponibles</p></div>
         </div>
         <div className="card flex items-center gap-3">
           <CheckCircle2 size={18} className="text-sena-green" />
@@ -82,7 +77,6 @@ export default function Guia1IndexPage() {
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="text-xs text-gray-500 flex items-center gap-1"><Clock size={11} />{s.time}</span>
-                  <span className="badge-yellow text-xs">+{s.pts} pts</span>
                   <ArrowRight size={14} className="text-gray-600 group-hover:text-white transition-colors" />
                 </div>
               </Link>

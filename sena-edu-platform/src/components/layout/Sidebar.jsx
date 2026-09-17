@@ -3,7 +3,7 @@ import { useProgress } from '../../context/ProgressContext'
 import {
   Home, Server, Layers, Zap,
   ChevronRight, CheckCircle2, Circle,
-  Crown, BarChart2, Users,
+  Radio, BarChart2, Users,
 } from 'lucide-react'
 
 const NAV_PLATAFORMA = [
@@ -16,7 +16,6 @@ const NAV_PLATAFORMA = [
       { to: '/guia1/servidores',    label: 'Servidores de aplicación', sid: 'servidores' },
       { to: '/guia1/lenguajes',     label: 'Lenguajes web',            sid: 'lenguajes-web' },
       { to: '/guia1/algoritmos',    label: 'Algoritmos básicos',       sid: 'algoritmos-intro' },
-      { to: '/guia1/quiz',          label: '🧠 Cuestionario Guía 1',  sid: null },
     ],
   },
   {
@@ -28,16 +27,15 @@ const NAV_PLATAFORMA = [
       { to: '/guia3/microservicios', label: 'Microservicios',           sid: 'microservicios' },
       { to: '/guia3/solid',          label: 'Principios SOLID',         sid: 'principios-solid' },
       { to: '/guia3/patrones',       label: 'Patrones de diseño',       sid: 'patrones-diseno' },
-      { to: '/guia3/quiz',           label: '🧠 Cuestionario Guía 3',  sid: null },
     ],
   },
   { to: '/playground', icon: Zap, label: 'Editor de código' },
 ]
 
 const NAV_ORGANIZADOR = [
-  { to: '/organizador/ranking',      icon: Crown,     label: 'Ranking' },
-  { to: '/organizador/estadisticas', icon: BarChart2, label: 'Estadísticas' },
-  { to: '/organizador/jugadores',    icon: Users,     label: 'Gestión jugadores' },
+  { to: '/vivo',                         icon: Radio,     label: 'En vivo' },
+  { to: '/organizador/estadisticas',     icon: BarChart2, label: 'Estadísticas' },
+  { to: '/organizador/jugadores',        icon: Users,     label: 'Gestión jugadores' },
 ]
 
 function SectionLink({ to, label, sid, guideId, onClick }) {
@@ -81,7 +79,7 @@ export default function Sidebar({ open, onClose }) {
           <div className="p-3 border-b border-gray-800">
             <div className="px-2 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
               <p className="text-xs text-yellow-400 font-semibold flex items-center gap-1.5">
-                <Crown size={11} /> Panel Organizador
+                <Radio size={11} /> Panel Organizador
               </p>
             </div>
           </div>
@@ -143,7 +141,7 @@ export default function Sidebar({ open, onClose }) {
 
         <div className="p-4 border-t border-gray-800 mt-2">
           <p className="text-[10px] text-gray-600 text-center">
-            SENA – Análisis y Desarrollo de Software<br />Programa 228118
+            SENA – Análisis y Desarrollo de Software
           </p>
         </div>
       </aside>

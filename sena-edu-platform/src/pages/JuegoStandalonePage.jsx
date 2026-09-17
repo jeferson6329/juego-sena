@@ -75,7 +75,7 @@ function PantallaNombre({ codigoSesion, onEntrar, error }) {
           </form>
         </div>
 
-        <p className="text-center text-[11px] text-gray-700">SENA · Análisis y Desarrollo de Software · 228118</p>
+        <p className="text-center text-[11px] text-gray-700">SENA · Análisis y Desarrollo de Software</p>
       </div>
     </div>
   )
