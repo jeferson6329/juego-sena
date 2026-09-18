@@ -1,17 +1,19 @@
 // Panel del organizador en tiempo real — /vivo
-// Muestra jugadores activos, progreso en vivo, bonus/descuentos
+// Muestra jugadores activos, progreso en vivo, bonus de sesión
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   obtenerJugadoresVivos, suscribirJugadores, desuscribir,
-  aplicarAjusteVivo, cerrarSesion,
+  cerrarSesion, activarBonus, desactivarBonus, obtenerBonusActivo,
+  suscribirSesion,
 } from '../lib/supabaseVivo'
 import { PREGUNTAS, RETOS_PSEUDOCODIGO } from '../data/gameData'
 import {
   Radio, RefreshCw, Users, CheckCircle2, XCircle,
-  Plus, Minus, ChevronDown, ChevronUp, X, Copy,
+  ChevronDown, ChevronUp, X, Copy,
   Home, Star, AlertTriangle, TrendingDown, TrendingUp, BookOpen,
+  Zap,
 } from 'lucide-react'
 
 // ─── Mapa id→item para enriquecer respuestas con tema ────────────────────────
@@ -159,8 +161,6 @@ function RefuerzoGeneral({ jugadores }) {
 }
 
 const KEY_SESION = 'sena_admin_sesion'
-const OPCIONES_BONUS     = [5, 10, 20, 50]
-const OPCIONES_DESCUENTO = [5, 10, 20]
 
 // ─── Barra de progreso inline ─────────────────────────────────────────────────
 function MiniProgress({ actual, total, estado }) {
@@ -251,7 +251,7 @@ function ModalAjuste({ jugador, tipo, codigoSesion, onDone, onCancelar }) {
 }
 
 // ─── Tarjeta de jugador ───────────────────────────────────────────────────────
-function TarjetaJugador({ j, codigoSesion, onAjuste }) {
+function TarjetaJugador({ j, codigoSesion }) {
   const [exp, setExp] = useState(false)
   const ajustes = Array.isArray(j.ajustes) ? j.ajustes : []
   const pct     = j.pct_aciertos || 0
@@ -284,8 +284,6 @@ function TarjetaJugador({ j, codigoSesion, onAjuste }) {
 
         {/* Acciones */}
         <div className="flex gap-1.5 shrink-0">
-          <button onClick={() => onAjuste(j, 'bonus')} className="p-1.5 rounded-lg bg-sena-green/10 border border-sena-green/20 hover:bg-sena-green/20 text-sena-green" title="Bonus"><Plus size={13} /></button>
-          <button onClick={() => onAjuste(j, 'descuento')} className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400" title="Descuento"><Minus size={13} /></button>
           <button onClick={() => setExp(v => !v)} className="p-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-400">
             {exp ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
@@ -335,13 +333,123 @@ function TarjetaJugador({ j, codigoSesion, onAjuste }) {
   )
 }
 
+// ─── Panel de bonus ───────────────────────────────────────────────────────────
+function PanelBonus({ codigoSesion, jugadores }) {
+  const [bonusActivo, setBonusActivo] = useState(null)   // null | 'doble_o_nada' | 'cincuenta_cincuenta'
+  const [cargando,    setCargando]    = useState(false)
+  const channelSesion = useRef(null)
+
+  // Cargar bonus actual
+  const cargarBonus = useCallback(async () => {
+    const { bonus } = await obtenerBonusActivo(codigoSesion)
+    setBonusActivo(bonus)
+  }, [codigoSesion])
+
+  // Suscribirse a cambios de sesión (para saber cuando se consume el bonus)
+  useEffect(() => {
+    cargarBonus()
+    channelSesion.current = suscribirSesion(codigoSesion, (sesion) => {
+      setBonusActivo(sesion.bonus_activo || null)
+    })
+    return () => desuscribir(channelSesion.current)
+  }, [codigoSesion, cargarBonus])
+
+  const handleActivar = async (tipo) => {
+    setCargando(true)
+    if (bonusActivo === tipo) {
+      await desactivarBonus(codigoSesion)
+      setBonusActivo(null)
+    } else {
+      await activarBonus(codigoSesion, tipo)
+      setBonusActivo(tipo)
+    }
+    setCargando(false)
+  }
+
+  const totalJugando = jugadores.filter(j => j.estado === 'jugando').length
+
+  return (
+    <div className="card border-yellow-500/20 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+          <Zap size={15} className="text-yellow-400" />
+          Bonus para la próxima pregunta
+        </h2>
+        {bonusActivo && (
+          <span className="badge badge-yellow text-xs animate-pulse">
+            {bonusActivo === 'doble_o_nada' ? '⚡ Doble o nada activo' : '✂️ 50/50 activo'}
+          </span>
+        )}
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-3">
+        {/* Doble o nada */}
+        <button
+          onClick={() => handleActivar('doble_o_nada')}
+          disabled={cargando || totalJugando === 0}
+          className={`p-4 rounded-xl border text-left transition-all disabled:opacity-40 ${
+            bonusActivo === 'doble_o_nada'
+              ? 'border-yellow-400 bg-yellow-500/15'
+              : 'border-gray-700 bg-gray-800 hover:border-yellow-500/50'
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-xl">⚡</span>
+            <p className="font-bold text-white text-sm">Doble o nada</p>
+            {bonusActivo === 'doble_o_nada' && (
+              <span className="text-xs text-yellow-400 ml-auto">← Clic para cancelar</span>
+            )}
+          </div>
+          <p className="text-xs text-gray-400 leading-relaxed">
+            Si responde bien: gana el <strong className="text-yellow-400">doble de puntos</strong>.
+            Si responde mal: <strong className="text-red-400">pierde los puntos base</strong> de esa pregunta.
+          </p>
+        </button>
+
+        {/* 50/50 */}
+        <button
+          onClick={() => handleActivar('cincuenta_cincuenta')}
+          disabled={cargando || totalJugando === 0}
+          className={`p-4 rounded-xl border text-left transition-all disabled:opacity-40 ${
+            bonusActivo === 'cincuenta_cincuenta'
+              ? 'border-blue-400 bg-blue-500/15'
+              : 'border-gray-700 bg-gray-800 hover:border-blue-500/50'
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-xl">✂️</span>
+            <p className="font-bold text-white text-sm">50/50</p>
+            {bonusActivo === 'cincuenta_cincuenta' && (
+              <span className="text-xs text-blue-400 ml-auto">← Clic para cancelar</span>
+            )}
+          </div>
+          <p className="text-xs text-gray-400 leading-relaxed">
+            En preguntas de 4 opciones, se <strong className="text-blue-400">eliminan 2 respuestas incorrectas</strong>.
+            Solo quedan 2 opciones visibles.
+          </p>
+        </button>
+      </div>
+
+      {totalJugando === 0 && (
+        <p className="text-xs text-gray-600 text-center">
+          Los bonus se activan cuando hay jugadores conectados.
+        </p>
+      )}
+      {bonusActivo && totalJugando > 0 && (
+        <p className="text-xs text-gray-500 text-center">
+          El bonus se desactivará automáticamente cuando los jugadores respondan la siguiente pregunta.
+        </p>
+      )}
+    </div>
+  )
+}
+
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function VivoPage() {
   const navigate      = useNavigate()
   const codigoSesion  = localStorage.getItem(KEY_SESION)
   const [jugadores,  setJugadores]  = useState([])
   const [loading,    setLoading]    = useState(true)
-  const [modal,      setModal]      = useState(null)  // { jugador, tipo }
   const [copiado,    setCopiado]    = useState(false)
   const channelRef   = useRef(null)
 
@@ -376,8 +484,6 @@ export default function VivoPage() {
     setCopiado(true)
     setTimeout(() => setCopiado(false), 2000)
   }
-
-  const handleAjusteDone = () => { setModal(null); cargar() }
 
   // Sin sesión activa
   if (!codigoSesion) return (
@@ -481,7 +587,6 @@ export default function VivoPage() {
               key={j.id}
               j={j}
               codigoSesion={codigoSesion}
-              onAjuste={(jug, tipo) => setModal({ jugador: jug, tipo })}
             />
           ))}
         </div>
@@ -492,16 +597,8 @@ export default function VivoPage() {
         <RefuerzoGeneral jugadores={jugadores} />
       )}
 
-      {/* Modal */}
-      {modal && (
-        <ModalAjuste
-          jugador={modal.jugador}
-          tipo={modal.tipo}
-          codigoSesion={codigoSesion}
-          onDone={handleAjusteDone}
-          onCancelar={() => setModal(null)}
-        />
-      )}
+      {/* Panel de bonus */}
+      <PanelBonus codigoSesion={codigoSesion} jugadores={jugadores} />
     </div>
   )
 }

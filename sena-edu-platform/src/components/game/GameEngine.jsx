@@ -29,7 +29,7 @@ function NivelBadge({ nivel }) {
   return <Badge color={map[nivel] || 'gray'}>{nivel}</Badge>
 }
 
-function FeedbackBox({ isCorrect, explicacion, pista, ptsObtenidos, onNext, isLast }) {
+function FeedbackBox({ isCorrect, explicacion, pista, ptsObtenidos, preguntaBase, onNext, isLast }) {
   return (
     <div className={`mt-4 p-4 rounded-xl border animate-slide-in ${
       isCorrect
@@ -43,7 +43,14 @@ function FeedbackBox({ isCorrect, explicacion, pista, ptsObtenidos, onNext, isLa
         }
         <div className="flex-1">
           <p className={`font-semibold text-sm mb-1 ${isCorrect ? 'text-sena-green' : 'text-red-400'}`}>
-            {isCorrect ? `¡Correcto! +${ptsObtenidos} puntos` : 'Incorrecto — 0 puntos'}
+            {isCorrect
+              ? ptsObtenidos > preguntaBase
+                ? `⚡ ¡Doble o nada! +${ptsObtenidos} puntos`
+                : `¡Correcto! +${ptsObtenidos} puntos`
+              : ptsObtenidos < 0
+                ? `⚡ Doble o nada — ${ptsObtenidos} puntos`
+                : 'Incorrecto — 0 puntos'
+            }
           </p>
           <p className="text-gray-300 text-sm leading-relaxed">{explicacion}</p>
         </div>
@@ -60,11 +67,24 @@ function FeedbackBox({ isCorrect, explicacion, pista, ptsObtenidos, onNext, isLa
 // ─── Tipos de pregunta ────────────────────────────────────────────────────────
 
 // Selección múltiple / Verdadero-Falso
-function PreguntaSeleccion({ pregunta, onAnswer, answered }) {
+function PreguntaSeleccion({ pregunta, onAnswer, answered, bonusActivo }) {
   const [selected, setSelected] = useState(null)
   const [showPista, setShowPista] = useState(false)
 
-  const opciones = pregunta.opciones || []
+  const todasOpciones = pregunta.opciones || []
+
+  // 50/50: si hay 4+ opciones, mostrar solo la correcta + 1 incorrecta aleatoria
+  const opciones = (() => {
+    if (bonusActivo === 'cincuenta_cincuenta' && todasOpciones.length >= 4 && !answered) {
+      const correcta   = todasOpciones.find(o => !!o.correcto || o.id === pregunta.respuestaCorrecta)
+      const incorrectas = todasOpciones.filter(o => !o.correcto && o.id !== pregunta.respuestaCorrecta)
+      const unaIncorrecta = incorrectas[Math.floor(Math.random() * incorrectas.length)]
+      // Mezclar las dos opciones
+      return [correcta, unaIncorrecta].sort(() => Math.random() - 0.5).filter(Boolean)
+    }
+    return todasOpciones
+  })()
+
   const elegida = answered?.respuesta
 
   const handleClick = (opcion) => {
@@ -96,6 +116,16 @@ function PreguntaSeleccion({ pregunta, onAnswer, answered }) {
 
   return (
     <div className="space-y-2">
+      {bonusActivo === 'cincuenta_cincuenta' && todasOpciones.length >= 4 && !answered && (
+        <p className="text-xs text-blue-400 flex items-center gap-1.5 mb-1">
+          ✂️ <strong>50/50 activo</strong> — solo quedan 2 opciones
+        </p>
+      )}
+      {bonusActivo === 'doble_o_nada' && !answered && (
+        <p className="text-xs text-yellow-400 flex items-center gap-1.5 mb-1">
+          ⚡ <strong>Doble o nada</strong> — acierto = doble pts · fallo = descuento
+        </p>
+      )}
       {opciones.map(op => (
         <button
           key={op.id}
@@ -485,49 +515,29 @@ function PreguntaConCodigo({ pregunta, onAnswer, answered }) {
 
 // ─── Componente principal GameEngine ─────────────────────────────────────────
 
-export default function GameEngine({ item, index, total, onAnswer, onNext, answered }) {
-  // answered: { isCorrect, pts, respuesta } | null
+export default function GameEngine({ item, index, total, onAnswer, onNext, answered, bonusActivo }) {
 
   const renderPregunta = () => {
     const tipo = item.tipo
 
-    // Retos de pseudocódigo
     if (tipo === TIPOS.CONSTRUIR_PSEUDO || item.bloquesDisponibles) {
-      return (
-        <PseudoBuilder
-          key={item.id}
-          reto={item}
-          onAnswer={onAnswer}
-          answered={answered}
-        />
-      )
+      return <PseudoBuilder key={item.id} reto={item} onAnswer={onAnswer} answered={answered} />
     }
-
-    // Tipos con código fuente
     if ([TIPOS.IDENTIFICAR_ERROR, TIPOS.SALIDA_ALGORITMO, TIPOS.ESTRUCTURA_CORRECTA].includes(tipo) && item.codigo) {
       return <PreguntaConCodigo key={item.id} pregunta={item} onAnswer={onAnswer} answered={answered} />
     }
-
-    // Ordenar pasos
     if (tipo === TIPOS.ORDENAR || tipo === TIPOS.FLUJO_PETICION) {
       return <PreguntaOrdenar key={item.id} pregunta={item} onAnswer={onAnswer} answered={answered} />
     }
-
-    // Relacionar conceptos / SOLID
     if (tipo === TIPOS.RELACIONAR || tipo === TIPOS.IDENTIFICAR_SOLID) {
       return <PreguntaRelacionar key={item.id} pregunta={item} onAnswer={onAnswer} answered={answered} />
     }
-
-    // Identificar MVC
     if (tipo === TIPOS.IDENTIFICAR_MVC) {
       return <PreguntaIdentificarMVC key={item.id} pregunta={item} onAnswer={onAnswer} answered={answered} />
     }
-
-    // Selección múltiple / Verdadero-Falso / Responsabilidad (con opciones)
     if (item.opciones) {
-      return <PreguntaSeleccion key={item.id} pregunta={item} onAnswer={onAnswer} answered={answered} />
+      return <PreguntaSeleccion key={item.id} pregunta={item} onAnswer={onAnswer} answered={answered} bonusActivo={bonusActivo} />
     }
-
     return <p className="text-gray-500 text-sm">Tipo de pregunta no soportado aún.</p>
   }
 
@@ -539,7 +549,13 @@ export default function GameEngine({ item, index, total, onAnswer, onNext, answe
       <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
         <span>Pregunta {index + 1} de {total}</span>
         <span className="text-yellow-400">
-          {answered ? (answered.isCorrect ? `+${answered.pts} pts ✓` : '0 pts ✗') : ''}
+          {answered
+            ? answered.pts > 0
+              ? `+${answered.pts} pts ✓`
+              : answered.pts < 0
+                ? `${answered.pts} pts ✗`
+                : '0 pts ✗'
+            : ''}
         </span>
       </div>
       <div className="progress-bar h-1.5 mb-5">
@@ -581,6 +597,7 @@ export default function GameEngine({ item, index, total, onAnswer, onNext, answe
           explicacion={item.explicacion}
           pista={item.pista}
           ptsObtenidos={answered.pts}
+          preguntaBase={item.puntos}
           onNext={onNext}
           isLast={index + 1 >= total}
         />

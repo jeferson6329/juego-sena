@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   Home, Server, Layers, Zap,
-  ChevronRight, CheckCircle2, Circle,
+  ChevronRight,
   Radio, BarChart2, Users,
 } from 'lucide-react'
 
@@ -37,9 +37,7 @@ const NAV_ORGANIZADOR = [
   { to: '/organizador/jugadores',        icon: Users,     label: 'Gestión jugadores' },
 ]
 
-function SectionLink({ to, label, sid, guideId, onClick }) {
-  const { isSectionComplete } = useProgress()
-  const done = sid ? isSectionComplete(guideId, sid) : false
+function SectionLink({ to, label, onClick }) {
   return (
     <NavLink to={to} onClick={onClick}
       className={({ isActive }) =>
@@ -48,10 +46,6 @@ function SectionLink({ to, label, sid, guideId, onClick }) {
         }`
       }
     >
-      {done
-        ? <CheckCircle2 size={12} className="text-sena-green shrink-0" />
-        : <Circle       size={12} className="text-gray-700 shrink-0" />
-      }
       {label}
     </NavLink>
   )

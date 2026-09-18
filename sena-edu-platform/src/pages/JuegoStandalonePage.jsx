@@ -6,6 +6,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   unirseASesion, actualizarJugador, salirDeSesion, verificarSesion,
+  suscribirSesion, desuscribir, marcarBonusUsado,
 } from '../lib/supabaseVivo'
 import {
   PREGUNTAS, RETOS_PSEUDOCODIGO, TOTAL_PUNTOS_POSIBLES, TEMAS,
@@ -20,7 +21,9 @@ const KEY_NOMBRE    = 'sena_jugador_nombre'
 const KEY_RESPUESTAS = 'sena_juego_respuestas'
 const KEY_SECUENCIA  = 'sena_juego_secuencia_ids'
 
-// ─── Utilidades ───────────────────────────────────────────────────────────────
+// Contadores filtrados (solo fácil y medio)
+const PREGUNTAS_FILTRADAS = PREGUNTAS.filter(p => p.nivel !== 'difícil')
+const RETOS_FILTRADOS     = RETOS_PSEUDOCODIGO.filter(r => r.nivel !== 'difícil')
 function mezclar(arr) {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -30,8 +33,9 @@ function mezclar(arr) {
 }
 
 function construirSecuencia() {
-  const pregs = mezclar(PREGUNTAS)
-  const retos = mezclar(RETOS_PSEUDOCODIGO)
+  // Solo preguntas fáciles y medias
+  const pregs = mezclar(PREGUNTAS.filter(p => p.nivel !== 'difícil'))
+  const retos = mezclar(RETOS_PSEUDOCODIGO.filter(r => r.nivel !== 'difícil'))
   const seq = []; let ri = 0
   pregs.forEach((p, i) => {
     seq.push({ ...p, _tipo: 'pregunta' })
@@ -134,11 +138,22 @@ export default function JuegoStandalonePage() {
 
   const [nombre,      setNombre]      = useState(null)
   const [errorNombre, setErrorNombre] = useState(null)
-  const [fase,        setFase]        = useState('nombre')   // nombre | intro | jugando | resultados
+  const [fase,        setFase]        = useState('nombre')
   const [secuencia,   setSecuencia]   = useState([])
   const [indice,      setIndice]      = useState(0)
   const [respuestas,  setRespuestas]  = useState({})
-  const guardandoRef = useRef(false)
+  const [bonusActivo, setBonusActivo] = useState(null) // null | 'doble_o_nada' | 'cincuenta_cincuenta'
+  const guardandoRef  = useRef(false)
+  const bonusCanalRef = useRef(null)
+
+  // Suscribirse a cambios de la sesión para recibir bonus en tiempo real
+  useEffect(() => {
+    if (!codigoSesion) return
+    bonusCanalRef.current = suscribirSesion(codigoSesion, (sesion) => {
+      setBonusActivo(sesion.bonus_activo || null)
+    })
+    return () => desuscribir(bonusCanalRef.current)
+  }, [codigoSesion])
 
   // Al salir del juego — limpiar de Supabase
   useEffect(() => {
@@ -198,7 +213,20 @@ export default function JuegoStandalonePage() {
     if (!item || respuestas[item.id] || guardandoRef.current) return
     guardandoRef.current = true
 
-    const nuevaResp = { isCorrect: resultado.isCorrect, pts: resultado.pts }
+    // Aplicar lógica de bonus activo
+    let ptsFinales = resultado.pts
+    if (bonusActivo === 'doble_o_nada') {
+      if (resultado.isCorrect) {
+        ptsFinales = resultado.pts * 2          // doble si acierta
+      } else {
+        ptsFinales = -(resultado.pts || 0)      // descuento si falla (negativo)
+      }
+      // Consumir el bonus
+      if (codigoSesion) marcarBonusUsado(codigoSesion).catch(() => {})
+      setBonusActivo(null)
+    }
+
+    const nuevaResp = { isCorrect: resultado.isCorrect, pts: ptsFinales, bonusAplicado: bonusActivo }
     const nuevasResp = { ...respuestas, [item.id]: nuevaResp }
     setRespuestas(nuevasResp)
 
@@ -206,7 +234,7 @@ export default function JuegoStandalonePage() {
       await actualizarJugador(codigoSesion, nombre, nuevasResp, indice, 'jugando')
     }
     guardandoRef.current = false
-  }, [secuencia, indice, respuestas, codigoSesion, nombre])
+  }, [secuencia, indice, respuestas, codigoSesion, nombre, bonusActivo])
 
   // Avanzar
   const handleNext = useCallback(async () => {
@@ -251,9 +279,9 @@ export default function JuegoStandalonePage() {
 
         <div className="grid grid-cols-3 gap-2 text-center">
           {[
-            { emoji: '❓', val: PREGUNTAS.length,          label: 'Preguntas' },
-            { emoji: '🔧', val: RETOS_PSEUDOCODIGO.length, label: 'Retos' },
-            { emoji: '⭐', val: TOTAL_PUNTOS_POSIBLES,     label: 'Pts máx.' },
+            { emoji: '❓', val: PREGUNTAS_FILTRADAS.length,  label: 'Preguntas' },
+            { emoji: '🔧', val: RETOS_FILTRADOS.length,      label: 'Retos' },
+            { emoji: '⭐', val: TOTAL_PUNTOS_POSIBLES,       label: 'Pts máx.' },
           ].map(s => (
             <div key={s.label} className="card py-3 text-center">
               <div className="text-xl mb-0.5">{s.emoji}</div>
@@ -303,6 +331,12 @@ export default function JuegoStandalonePage() {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-yellow-400 text-sm font-semibold">⭐ {ptsAcum} pts</span>
+            {bonusActivo === 'doble_o_nada' && (
+              <span className="badge badge-yellow text-[10px] animate-pulse">⚡ Doble o nada</span>
+            )}
+            {bonusActivo === 'cincuenta_cincuenta' && (
+              <span className="badge badge-blue text-[10px] animate-pulse">✂️ 50/50</span>
+            )}
             <span className="text-xs text-gray-600">{indice + 1}/{secuencia.length}</span>
           </div>
         </div>
@@ -315,6 +349,7 @@ export default function JuegoStandalonePage() {
             onAnswer={handleAnswer}
             onNext={handleNext}
             answered={respuestaActual}
+            bonusActivo={bonusActivo}
           />
         )}
       </div>

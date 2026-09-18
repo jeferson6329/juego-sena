@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, Clock } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 
 const SECTIONS = [
-  { to: '/guia1/intro',      title: 'Introducción al Back-end',     time: '10 min' },
-  { to: '/guia1/http',       title: 'HTTP y protocolos web',        time: '15 min' },
-  { to: '/guia1/servidores', title: 'Servidores de aplicación',     time: '10 min' },
-  { to: '/guia1/lenguajes',  title: 'Lenguajes de programación web',time: '20 min' },
-  { to: '/guia1/algoritmos', title: 'Algoritmos fundamentales',     time: '25 min' },
+  { to: '/guia1/intro',      title: 'Introducción al Back-end'      },
+  { to: '/guia1/http',       title: 'HTTP y protocolos web'         },
+  { to: '/guia1/servidores', title: 'Servidores de aplicación'      },
+  { to: '/guia1/lenguajes',  title: 'Lenguajes de programación web' },
+  { to: '/guia1/algoritmos', title: 'Algoritmos fundamentales'      },
 ]
 
 export default function Guia1IndexPage() {
@@ -23,11 +23,6 @@ export default function Guia1IndexPage() {
         </p>
       </div>
 
-      <div className="card flex items-center gap-3">
-        <Clock size={18} className="text-blue-400" />
-        <div><p className="text-white font-semibold text-sm">60 horas</p><p className="text-xs text-gray-500">Duración total</p></div>
-      </div>
-
       <div>
         <h2 className="section-title">Contenido de la guía</h2>
         <div className="space-y-2">
@@ -36,13 +31,8 @@ export default function Guia1IndexPage() {
               className="flex items-center gap-4 p-4 rounded-xl border border-gray-800 bg-gray-900 hover:border-gray-600 transition-all duration-200 group"
             >
               <span className="text-gray-500 text-sm font-mono w-5 shrink-0">{i + 1}</span>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm text-white">{s.title}</p>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <span className="text-xs text-gray-500 flex items-center gap-1"><Clock size={11} />{s.time}</span>
-                <ArrowRight size={14} className="text-gray-600 group-hover:text-white transition-colors" />
-              </div>
+              <p className="flex-1 font-medium text-sm text-white">{s.title}</p>
+              <ArrowRight size={14} className="text-gray-600 group-hover:text-white transition-colors shrink-0" />
             </Link>
           ))}
         </div>

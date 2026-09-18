@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { getEstadisticas } from '../../lib/localStats'
+import { obtenerResultados } from '../../lib/supabaseJuego'
 import { PREGUNTAS, RETOS_PSEUDOCODIGO } from '../../data/gameData'
 import {
   BarChart2, Users, CheckCircle2, XCircle, RefreshCw,
@@ -59,9 +59,61 @@ export default function EstadisticasPage() {
   const [stats, setStats]         = useState(null)
   const [vistaActiva, setVistaActiva] = useState('general')
 
-  const cargar = () => {
-    const s = getEstadisticas({ PREGUNTAS, RETOS_PSEUDOCODIGO })
-    setStats(s)
+  // Mapa id→item para enriquecer respuestas con tema
+  const ITEM_MAP = useMemo(() => Object.fromEntries(
+    [...PREGUNTAS, ...RETOS_PSEUDOCODIGO].map(i => [i.id, i])
+  ), [])
+
+  const cargar = async () => {
+    const { data: jugadores } = await obtenerResultados()
+    if (!jugadores || jugadores.length === 0) { setStats({ totalJugadores: 0 }); return }
+
+    // Agregar respuestas por ítem y por tema
+    const porItem = {}
+    jugadores.forEach(j => {
+      Object.entries(j.respuestas || {}).forEach(([itemId, resp]) => {
+        const item = ITEM_MAP[itemId]
+        if (!item) return
+        if (!porItem[itemId]) porItem[itemId] = { total: 0, aciertos: 0, errores: 0, tema: item.tema, itemData: item }
+        porItem[itemId].total++
+        if (resp.isCorrect) porItem[itemId].aciertos++
+        else porItem[itemId].errores++
+      })
+    })
+
+    const itemsArr = Object.values(porItem).map(i => ({
+      ...i,
+      pctAcierto: i.total > 0 ? Math.round((i.aciertos / i.total) * 100) : 0,
+      pctError:   i.total > 0 ? Math.round((i.errores  / i.total) * 100) : 0,
+    })).sort((a, b) => b.pctError - a.pctError)
+
+    const porTema = {}
+    itemsArr.forEach(i => {
+      const t = i.tema || 'Sin tema'
+      if (!porTema[t]) porTema[t] = { total: 0, aciertos: 0, errores: 0 }
+      porTema[t].total    += i.total
+      porTema[t].aciertos += i.aciertos
+      porTema[t].errores  += i.errores
+    })
+    const temasStats = Object.entries(porTema).map(([tema, st]) => ({
+      tema, ...st,
+      pctAcierto: st.total > 0 ? Math.round((st.aciertos / st.total) * 100) : 0,
+      pctError:   st.total > 0 ? Math.round((st.errores  / st.total) * 100) : 0,
+    })).sort((a, b) => b.pctError - a.pctError)
+
+    const completados = jugadores.filter(j => j.estado === 'completado')
+
+    setStats({
+      totalJugadores:   jugadores.length,
+      completados:      completados.length,
+      pctFinalizacion:  jugadores.length > 0 ? Math.round((completados.length / jugadores.length) * 100) : 0,
+      promedioAciertos: jugadores.length > 0 ? Math.round(jugadores.reduce((s, j) => s + (j.pct_aciertos || 0), 0) / jugadores.length) : 0,
+      ptsPromedio:      jugadores.length > 0 ? Math.round(jugadores.reduce((s, j) => s + (j.puntaje_final || 0), 0) / jugadores.length) : 0,
+      itemsStats:       itemsArr,
+      temasStats,
+      masFallado:       itemsArr[0] || null,
+      masAcertado:      [...itemsArr].sort((a, b) => b.pctAcierto - a.pctAcierto)[0] || null,
+    })
   }
 
   useEffect(() => { if (!authLoading && isOrganizador) cargar() }, [authLoading, isOrganizador])

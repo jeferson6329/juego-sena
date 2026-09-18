@@ -73,8 +73,13 @@ grant all privileges on public.ajustes_puntos to service_role;
 -- Se marca como inactiva al terminar; los jugadores se eliminan en cascada.
 create table if not exists public.sesiones_vivo (
   id          uuid default gen_random_uuid() primary key,
-  codigo      text         not null unique,   -- 6 caracteres, ej: "ABC123"
+  codigo      text         not null unique,
   activa      boolean      default true,
+  -- Bonus activo para la próxima pregunta
+  -- null = ninguno | 'doble_o_nada' | 'cincuenta_cincuenta'
+  bonus_activo  text         default null
+                  check (bonus_activo in ('doble_o_nada', 'cincuenta_cincuenta', null)),
+  bonus_usado   boolean      default false,  -- se marca true cuando el primer jugador responde
   creada_at   timestamptz  default now(),
   cerrada_at  timestamptz
 );
@@ -83,6 +88,12 @@ alter table public.sesiones_vivo disable row level security;
 grant all privileges on public.sesiones_vivo to anon;
 grant all privileges on public.sesiones_vivo to authenticated;
 grant all privileges on public.sesiones_vivo to service_role;
+
+-- Si la tabla ya existía, agregar las columnas de bonus
+alter table public.sesiones_vivo
+  add column if not exists bonus_activo  text default null
+    check (bonus_activo in ('doble_o_nada', 'cincuenta_cincuenta', null)),
+  add column if not exists bonus_usado   boolean default false;
 
 -- Tabla: jugadores_vivo
 -- Un jugador por fila dentro de una sesión activa.
@@ -157,7 +168,7 @@ alter publication supabase_realtime add table public.sesiones_vivo;
 --   • El admin crea una sesión con un código único (6 letras).
 --   • Los jugadores se unen con /juego?codigo=XXXXXX
 --   • Al cerrar la sesión → activa = false → jugadores_vivo se limpia.
---
+--considero que los cuadros de secciones echa progreso guía 1 progreso guía 2 y total completados es innecesario ya que como veníamos diciendo las guías son solo educativas no necesitan confirmación de lectura ni nada 
 -- jugadores_vivo:
 --   • Temporal: existe solo mientras el jugador está en la página.
 --   • beforeunload → DELETE de la fila del jugador.

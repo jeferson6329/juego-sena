@@ -151,6 +151,63 @@ export function desuscribir(channel) {
   if (channel) supabase.removeChannel(channel)
 }
 
+// ─── Bonus de sesión (admin) ──────────────────────────────────────────────────
+
+// Activar un bonus para la próxima pregunta
+export async function activarBonus(codigoSesion, tipo) {
+  const { error } = await supabase
+    .from('sesiones_vivo')
+    .update({ bonus_activo: tipo, bonus_usado: false })
+    .eq('codigo', codigoSesion)
+  return { error }
+}
+
+// Desactivar bonus (admin cancela antes de que se use)
+export async function desactivarBonus(codigoSesion) {
+  const { error } = await supabase
+    .from('sesiones_vivo')
+    .update({ bonus_activo: null, bonus_usado: false })
+    .eq('codigo', codigoSesion)
+  return { error }
+}
+
+// Leer el bonus activo de la sesión
+export async function obtenerBonusActivo(codigoSesion) {
+  const { data, error } = await supabase
+    .from('sesiones_vivo')
+    .select('bonus_activo, bonus_usado')
+    .eq('codigo', codigoSesion)
+    .single()
+  return { bonus: data?.bonus_activo || null, usado: data?.bonus_usado || false, error }
+}
+
+// Marcar bonus como usado (lo llama el jugador al responder)
+export async function marcarBonusUsado(codigoSesion) {
+  const { error } = await supabase
+    .from('sesiones_vivo')
+    .update({ bonus_activo: null, bonus_usado: true })
+    .eq('codigo', codigoSesion)
+  return { error }
+}
+
+// Suscribirse a cambios en la sesión (para que jugadores reciban el bonus en tiempo real)
+export function suscribirSesion(codigoSesion, callback) {
+  const channel = supabase
+    .channel(`sesion_${codigoSesion}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'sesiones_vivo',
+        filter: `codigo=eq.${codigoSesion}`,
+      },
+      (payload) => callback(payload.new)
+    )
+    .subscribe()
+  return channel
+}
+
 // ─── Bonus / Descuentos (admin) ───────────────────────────────────────────────
 
 export async function aplicarAjusteVivo(codigoSesion, nombre, cantidad, tipo, motivo) {
